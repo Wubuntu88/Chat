@@ -11,4 +11,6 @@
 
 #include <stdio.h>
 
+void print_menu();
+
 #endif /* Client_h */
