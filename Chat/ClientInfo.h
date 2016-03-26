@@ -10,5 +10,12 @@
 #define ClientInfo_h
 
 #include <stdio.h>
+#include <arpa/inet.h>
+typedef struct {
+    char username[20];
+    struct sockaddr_in address;
+    int tcpPort;
+    int udpPort;
+} Client;
 
 #endif /* ClientInfo_h */
