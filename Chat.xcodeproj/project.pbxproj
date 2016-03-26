@@ -12,6 +12,7 @@
 		BE13CAB01CA6D74000298B5E /* Client.c in Sources */ = {isa = PBXBuildFile; fileRef = BE13CAAE1CA6D74000298B5E /* Client.c */; };
 		BEBAAE421CA628EF009B658F /* ClientInfo.c in Sources */ = {isa = PBXBuildFile; fileRef = BEBAAE401CA628EF009B658F /* ClientInfo.c */; };
 		BEBAAE441CA62ACF009B658F /* DieWithError.c in Sources */ = {isa = PBXBuildFile; fileRef = BEBAAE431CA62ACF009B658F /* DieWithError.c */; };
+		BEF821AF1CA6FB4200BE3867 /* ServerToClientMessage.c in Sources */ = {isa = PBXBuildFile; fileRef = BEF821AD1CA6FB4200BE3867 /* ServerToClientMessage.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -36,6 +37,9 @@
 		BEBAAE401CA628EF009B658F /* ClientInfo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ClientInfo.c; sourceTree = "<group>"; };
 		BEBAAE411CA628EF009B658F /* ClientInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientInfo.h; sourceTree = "<group>"; };
 		BEBAAE431CA62ACF009B658F /* DieWithError.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = DieWithError.c; sourceTree = "<group>"; };
+		BEF821AC1CA6F4D500BE3867 /* Constants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Constants.h; sourceTree = "<group>"; };
+		BEF821AD1CA6FB4200BE3867 /* ServerToClientMessage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ServerToClientMessage.c; sourceTree = "<group>"; };
+		BEF821AE1CA6FB4200BE3867 /* ServerToClientMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ServerToClientMessage.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,12 +73,15 @@
 			isa = PBXGroup;
 			children = (
 				977F33D01CA5C03000972562 /* main.c */,
+				BEF821AD1CA6FB4200BE3867 /* ServerToClientMessage.c */,
+				BEF821AE1CA6FB4200BE3867 /* ServerToClientMessage.h */,
 				977F33D71CA5C18200972562 /* ClientToServerMessage.c */,
 				977F33D81CA5C18200972562 /* ClientToServerMessage.h */,
 				BEBAAE401CA628EF009B658F /* ClientInfo.c */,
 				BE13CAAE1CA6D74000298B5E /* Client.c */,
 				BE13CAAF1CA6D74000298B5E /* Client.h */,
 				BEBAAE411CA628EF009B658F /* ClientInfo.h */,
+				BEF821AC1CA6F4D500BE3867 /* Constants.h */,
 				BEBAAE431CA62ACF009B658F /* DieWithError.c */,
 			);
 			path = Chat;
@@ -138,6 +145,7 @@
 			files = (
 				BEBAAE421CA628EF009B658F /* ClientInfo.c in Sources */,
 				977F33D91CA5C18200972562 /* ClientToServerMessage.c in Sources */,
+				BEF821AF1CA6FB4200BE3867 /* ServerToClientMessage.c in Sources */,
 				977F33D11CA5C03000972562 /* main.c in Sources */,
 				BEBAAE441CA62ACF009B658F /* DieWithError.c in Sources */,
 				BE13CAB01CA6D74000298B5E /* Client.c in Sources */,
