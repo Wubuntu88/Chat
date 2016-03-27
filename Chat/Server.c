@@ -101,9 +101,19 @@ void send_response(struct sockaddr_in clientAddress, ServerToClientMessage messa
                (struct sockaddr *) &clientAddress, sizeof(clientAddress)) < 0)
         DieWithError("sendto() sent a different number of bytes than expected");
 }
-
+/*
+ * Logs in the user by inserting the user in the array of logged in users.
+ *  Sends a confirmation to the user if the login was successful or a failure if not.
+ * @param clientAddress: the client address to whom the confirmation will be sent.
+ * @param clientMessage: contains the username used to log in the client and upd/tcp port number
+ */
 void login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage){
+    ServerToClientMessage message;
+    
     //check if there are too many users to allow a new one to log in
+    if (numberOfLoggedInUsers == MAX_USERS) {
+        printf("The server cannot handle more users; try again later.\n");
+    }
     
     /*iterate through the users and check if the username is a duplicate
      * or if the tcp client address and port number are already in the list of users
