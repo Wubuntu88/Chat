@@ -29,6 +29,8 @@ struct sockaddr_in client_address;
 int server_port;
 
 void DieWithError(char *errorMessage);  /* External error handling function */
+/* function used to log the user in.  If successful, new Client is added to users array*/
+void login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
 /*
  main method of the server program
  @param: argv[1]: server's port number
@@ -64,8 +66,8 @@ int main(int argc, char *argv[])
     
     while(1){//loop forever and handle clients requests
         
-        ClientToServerMessage *clientMessage = (ClientToServerMessage *)malloc(sizeof(ClientToServerMessage));
-        
+        //ClientToServerMessage *clientMessage = (ClientToServerMessage *)malloc(sizeof(ClientToServerMessage));
+        ClientToServerMessage clientMessage;
         /* Set the size of the in-out parameter */
         unsigned int clientAddressLength = sizeof(client_address);
         /* Block until receive message from a client */
@@ -74,14 +76,13 @@ int main(int argc, char *argv[])
             DieWithError("recvfrom() failed");
         
         //handle different types of requests
-        if (clientMessage->requestType == Login) {
-            
+        if (clientMessage.requestType == Login) {
+            login_user(client_address, clientMessage);
+        } else if (clientMessage.requestType == Logout){
             ;
-        } else if (clientMessage->requestType == Logout){
+        } else if (clientMessage.requestType == Who){
             ;
-        } else if (clientMessage->requestType == Who){
-            ;
-        } else if (clientMessage->requestType == RequestChat){
+        } else if (clientMessage.requestType == RequestChat){
             ;
         } else {
             ;
@@ -108,23 +109,50 @@ void send_response(struct sockaddr_in clientAddress, ServerToClientMessage messa
  * @param clientMessage: contains the username used to log in the client and upd/tcp port number
  */
 void login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage){
-    ServerToClientMessage message;
+    ServerToClientMessage serverToClientMessage;
     
     //check if there are too many users to allow a new one to log in
     if (numberOfLoggedInUsers == MAX_USERS) {
-        printf("The server cannot handle more users; try again later.\n");
+        char message[] = "The server cannot handle more users; try again later.";
+        strncpy(serverToClientMessage.content, message, sizeof(message));
+        serverToClientMessage.responseType = Failure;
+        send_response(clientAddress, serverToClientMessage);
+        return;
     }
     
-    /*iterate through the users and check if the username is a duplicate
+    /*
+     * Iterate through the users and check if the username is a duplicate
      * or if the tcp client address and port number are already in the list of users
      */
+    //the pointer to the client being examined in the array of users
+    Client *currentClient;
+    //the exclusive end address of the "last" client in the array of users
+    Client *exclusiveEnd = users + numberOfLoggedInUsers;
+    for (currentClient = users; currentClient < exclusiveEnd; currentClient++) {
+        //check of identical username
+        if (strncmp(clientMessage.content, currentClient->username, sizeof(currentClient->username)) == 0) {//if that username is taken, send a rejection.
+            char message[] = "That username is already taken; choose a different one.";
+            strncpy(serverToClientMessage.content, message, sizeof(message));
+            serverToClientMessage.responseType = Failure;
+            send_response(clientAddress, serverToClientMessage);
+            return;
+        }
+    }
     
     //trace that a user has been logged in
+    printf("%s has logged in\n", clientMessage.content);
     
     //initialize Client data struct; place user in array of users
+    strcpy(currentClient->username, clientMessage.content);
+    currentClient->address = clientAddress;
+    currentClient->udpPort = clientMessage.udpPort;
+    currentClient->tcpPort = clientMessage.tcpPort;
     
     //send success response to client with list of users
-    
+    sprintf(serverToClientMessage.content, "You successfully logged in as <%s>", currentClient->username);
+    serverToClientMessage.responseType = Success;
+    send_response(clientAddress, serverToClientMessage);
+    return;
 }
 
 
