@@ -9,10 +9,11 @@
 /* Begin PBXBuildFile section */
 		977F33D11CA5C03000972562 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 977F33D01CA5C03000972562 /* main.c */; };
 		977F33D91CA5C18200972562 /* ClientToServerMessage.c in Sources */ = {isa = PBXBuildFile; fileRef = 977F33D71CA5C18200972562 /* ClientToServerMessage.c */; };
+		BE8C07F01CA71224000A0966 /* Client.c in Sources */ = {isa = PBXBuildFile; fileRef = BE8C07EF1CA71224000A0966 /* Client.c */; };
+		BE8C07F31CA77E5C000A0966 /* Server.c in Sources */ = {isa = PBXBuildFile; fileRef = BE8C07F11CA77E5C000A0966 /* Server.c */; };
 		BEBAAE421CA628EF009B658F /* ClientInfo.c in Sources */ = {isa = PBXBuildFile; fileRef = BEBAAE401CA628EF009B658F /* ClientInfo.c */; };
 		BEBAAE441CA62ACF009B658F /* DieWithError.c in Sources */ = {isa = PBXBuildFile; fileRef = BEBAAE431CA62ACF009B658F /* DieWithError.c */; };
 		BEF821AF1CA6FB4200BE3867 /* ServerToClientMessage.c in Sources */ = {isa = PBXBuildFile; fileRef = BEF821AD1CA6FB4200BE3867 /* ServerToClientMessage.c */; };
-		BEF821B31CA70F6100BE3867 /* Client.c in Sources */ = {isa = PBXBuildFile; fileRef = BEF821B21CA70F6100BE3867 /* Client.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,13 +34,15 @@
 		977F33D71CA5C18200972562 /* ClientToServerMessage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ClientToServerMessage.c; sourceTree = "<group>"; };
 		977F33D81CA5C18200972562 /* ClientToServerMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientToServerMessage.h; sourceTree = "<group>"; };
 		BE13CAAF1CA6D74000298B5E /* Client.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Client.h; sourceTree = "<group>"; };
+		BE8C07EF1CA71224000A0966 /* Client.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Client.c; sourceTree = "<group>"; };
+		BE8C07F11CA77E5C000A0966 /* Server.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Server.c; sourceTree = "<group>"; };
+		BE8C07F21CA77E5C000A0966 /* Server.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Server.h; sourceTree = "<group>"; };
 		BEBAAE401CA628EF009B658F /* ClientInfo.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ClientInfo.c; sourceTree = "<group>"; };
 		BEBAAE411CA628EF009B658F /* ClientInfo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientInfo.h; sourceTree = "<group>"; };
 		BEBAAE431CA62ACF009B658F /* DieWithError.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = DieWithError.c; sourceTree = "<group>"; };
 		BEF821AC1CA6F4D500BE3867 /* Constants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Constants.h; sourceTree = "<group>"; };
 		BEF821AD1CA6FB4200BE3867 /* ServerToClientMessage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ServerToClientMessage.c; sourceTree = "<group>"; };
 		BEF821AE1CA6FB4200BE3867 /* ServerToClientMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ServerToClientMessage.h; sourceTree = "<group>"; };
-		BEF821B21CA70F6100BE3867 /* Client.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Client.c; path = ../Client.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,9 +80,11 @@
 				BEF821AE1CA6FB4200BE3867 /* ServerToClientMessage.h */,
 				977F33D71CA5C18200972562 /* ClientToServerMessage.c */,
 				977F33D81CA5C18200972562 /* ClientToServerMessage.h */,
-				BEBAAE401CA628EF009B658F /* ClientInfo.c */,
-				BEF821B21CA70F6100BE3867 /* Client.c */,
+				BE8C07F11CA77E5C000A0966 /* Server.c */,
+				BE8C07F21CA77E5C000A0966 /* Server.h */,
+				BE8C07EF1CA71224000A0966 /* Client.c */,
 				BE13CAAF1CA6D74000298B5E /* Client.h */,
+				BEBAAE401CA628EF009B658F /* ClientInfo.c */,
 				BEBAAE411CA628EF009B658F /* ClientInfo.h */,
 				BEF821AC1CA6F4D500BE3867 /* Constants.h */,
 				BEBAAE431CA62ACF009B658F /* DieWithError.c */,
@@ -143,11 +148,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BEF821B31CA70F6100BE3867 /* Client.c in Sources */,
 				BEBAAE421CA628EF009B658F /* ClientInfo.c in Sources */,
 				977F33D91CA5C18200972562 /* ClientToServerMessage.c in Sources */,
 				BEF821AF1CA6FB4200BE3867 /* ServerToClientMessage.c in Sources */,
 				977F33D11CA5C03000972562 /* main.c in Sources */,
+				BE8C07F01CA71224000A0966 /* Client.c in Sources */,
+				BE8C07F31CA77E5C000A0966 /* Server.c in Sources */,
 				BEBAAE441CA62ACF009B658F /* DieWithError.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
