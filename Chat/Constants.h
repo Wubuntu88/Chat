@@ -20,7 +20,10 @@
 /* Sizes of types of messages the client can send */
 #define CLIENT_COMMAND_SIZE 20
 #define CLIENT_MESSAGE_SIZE 500
-#define CLIENT_USERNAME_MAX_SIZE    10
+#define CLIENT_USERNAME_MAX_SIZE 10
+
+/* max number of users that a server can handle */
+#define MAX_USERS 25
 
 #endif /* Constants_h */
 
