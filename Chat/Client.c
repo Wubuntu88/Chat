@@ -60,9 +60,9 @@ struct sockaddr_in fromAddr;
 int main(int argc, const char * argv[]) {
     /* check number of parameters (should be 5) */
     if (argc != 5) {
-        char errorMes[80];
-        sprintf(errorMes, "Usage: %s <1:Local UDP Port> <2:Local TCP Port> <3:Server IP Address> <4:Server Port>", argv[0]);
-        DieWithError(errorMes);
+        char errorMessage[100];
+        sprintf(errorMessage, "Usage: %s <1:Local UDP Port> <2:Local TCP Port> <3:Server IP Address> <4:Server Port>", argv[0]);
+        DieWithError(errorMessage);
     }
     
     /* set variables that come in through parameters */
