@@ -10,7 +10,11 @@
 #define Client_h
 
 #include <stdio.h>
+#include "ServerToClientMessage.h"
+#include "ClientToServerMessage.h"
 
 void print_menu();
+void log_in();
+ServerToClientMessage* send_request(ClientToServerMessage *client_to_server_message);
 
 #endif /* Client_h */
