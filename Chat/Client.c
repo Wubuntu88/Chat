@@ -175,24 +175,19 @@ void log_in(){
         printf("You are already logged in; to login as another user, logout first, then login again.");
     } else {//if not logged in, send message to server, get response
         //get username from user
+        printf("Enter username: ");
         char username[CLIENT_USERNAME_MAX_SIZE];
         int len = (int)strnlen(username, sizeof(username));
         if(username[len - 1] == '\n'){//get rid of newline
             username[len - 1] = '\0';
         }
-        //send request
+        
         ClientToServerMessage message;
         message.udpPort = udpPort;
         message.tcpPort = tcpPort;
         message.requestType = Login;
         message.content = username;
-        
-        //send the message
-        if (sendto(udpSocket, &message, sizeof(message), 0, (struct sockaddr *)
-                   &serverAddress, sizeof(serverAddress)) != sizeof(message)){
-            DieWithError("sendto() failed; unable to send login message");
-        }
-        
+        //send request
         ServerToClientMessage *servResponse = send_request(&message);
         //check if it was a success or failure
         if (servResponse->responseType == Success) {
@@ -209,12 +204,12 @@ void log_in(){
 
 ServerToClientMessage *send_request(ClientToServerMessage *client_to_server_message){
     
-    ServerToClientMessage *serverResponse = (ServerToClientMessage *)malloc(sizeof(ServerToClientMessage));
-    
+    //ServerToClientMessage *serverResponse = (ServerToClientMessage *)malloc(sizeof(ServerToClientMessage));
+    ServerToClientMessage *serverResponse;
     //send request to server
     if (sendto(udpSocket, &client_to_server_message, sizeof(client_to_server_message), 0, (struct sockaddr *)
                &serverAddress, sizeof(serverAddress)) != sizeof(client_to_server_message))
-        DieWithError("sendto() sent a different number of bytes than expected");
+        DieWithError("sendto() sent a different number of bytes than expected\n unable to send login message");
     
     //get response from server.  Response stored in the servResponse struct
     unsigned int fromAddrSize = sizeof(fromAddr);
