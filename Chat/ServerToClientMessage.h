@@ -13,7 +13,7 @@
 
 typedef struct {
     char *content;
-    enum {SUCCESS, FAILURE} responseType;
+    enum {Success, Failure} responseType;
 } ServerToClientMessage;
 
 #endif /* ServerToClientMessage_h */
