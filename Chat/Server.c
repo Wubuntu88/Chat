@@ -27,9 +27,14 @@ struct sockaddr_in server_address;
 struct sockaddr_in client_address;
 int server_port;
 
+//reused for every message sent to a client.  Data changed every time.
+ServerToClientMessage serverToClientMessage;
+
 void DieWithError(char *errorMessage);  /* External error handling function */
 /* function used to log the user in.  If successful, new Client is added to users array*/
 int login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
+void sendUserListToUser(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
+char* userListString();
 /*
  main method of the server program
  @param: argv[1]: server's port number
@@ -76,9 +81,10 @@ int main(int argc, char *argv[])
             int success = login_user(client_address, clientMessage);
             //still must send all other users a list of logged in users if login was a success
         } else if (clientMessage.requestType == Logout){
-            ;
+            int success = logout_user(client_address, clientMessage);
         } else if (clientMessage.requestType == Who){
-            ;
+            //char* messagePtr = userListString();
+            sendUserListToUser(client_address, clientMessage);
         } else if (clientMessage.requestType == RequestChat){
             ;
         } else {
@@ -107,8 +113,6 @@ void send_response(struct sockaddr_in clientAddress, ServerToClientMessage messa
  * @param 1 if login was successful; 0 if login was unsuccessful.
  */
 int login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage){
-    ServerToClientMessage serverToClientMessage;
-    
     //check if there are too many users to allow a new one to log in
     if (numberOfLoggedInUsers == MAX_USERS) {
         char message[] = "The server cannot handle more users; try again later.";
@@ -154,11 +158,60 @@ int login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMes
 }
 
 int logout_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage){
+    //must find the user in the list of users by iterating through list of users
+    Client *currentClient;
+    Client *exclusiveEnd = users + numberOfLoggedInUsers;
+    for (currentClient = users; currentClient < exclusiveEnd; currentClient++) {
+        if (strncmp(currentClient->username, clientMessage.content, sizeof(currentClient->username)) == 0) {
+            break;//we found the current client
+        }
+    }
     
-    
-    return 1;
+    if (currentClient == exclusiveEnd) {//the username was not found
+        char message[] = "That username was not found in list of users.";
+        strcpy(serverToClientMessage.content, message);
+        serverToClientMessage.responseType = Failure;
+        send_response(clientAddress, serverToClientMessage);
+        return 0;
+    }else{//the username was found
+        //now I must delete that user if they were found.
+        for (; currentClient < exclusiveEnd - 1; currentClient++) {
+            moveClient(currentClient, currentClient + 1);
+        }
+        char message[] = "Logout successful";
+        strcpy(clientMessage.content, message);
+        serverToClientMessage.responseType = Success;
+        send_response(clientAddress, serverToClientMessage);
+        return 1;
+    }
 }
 
+void sendUserListToUser(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage){
+    char* userList = userListString();
+    strncpy(serverToClientMessage.content, userList, sizeof(serverToClientMessage.content) - 1);
+    serverToClientMessage.content[SERVER_MESSAGE_SIZE - 1] = 0;
+    serverToClientMessage.responseType = Success;
+    send_response(clientAddress, serverToClientMessage);
+}
+
+char* userListString(){
+    char message[SERVER_MESSAGE_SIZE];
+    char *ptr = message;
+    
+    Client *current;
+    Client *exclusiveEnd = users + numberOfLoggedInUsers;
+    
+    for (current = users; current < exclusiveEnd; current++) {
+        char username[CLIENT_USERNAME_MAX_SIZE + 1];
+        sprintf(username, "%s\n", current->username);
+        int len = (int)strlen(username);
+        strcat(ptr, username);
+        ptr += len;
+    }
+    ptr = 0;//null terminate the message
+    char *retVal = message;
+    return retVal;
+}
 
 
 
