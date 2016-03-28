@@ -11,6 +11,8 @@
 
 #include <stdio.h>
 
+#include "Constants.h"
+
 typedef struct {
     /* content has diferent meanings based on the enum
      Login: username
@@ -19,10 +21,10 @@ typedef struct {
      Request Chat: other user client wants to chat with
      Status: not sure yet
      */
-    char *content;
     int udpPort;
     int tcpPort;
     enum {Login, Logout, Who, RequestChat, Status} requestType;
+    char content[CLIENT_COMMAND_SIZE];
 }ClientToServerMessage;
 
 #endif /* ClientToServerMessage_h */
