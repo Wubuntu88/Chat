@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		974926A41CA9704D00BDFBCC /* Helper.c in Sources */ = {isa = PBXBuildFile; fileRef = 974926A21CA9704D00BDFBCC /* Helper.c */; };
 		977F33D11CA5C03000972562 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 977F33D01CA5C03000972562 /* main.c */; };
 		977F33D91CA5C18200972562 /* ClientToServerMessage.c in Sources */ = {isa = PBXBuildFile; fileRef = 977F33D71CA5C18200972562 /* ClientToServerMessage.c */; };
 		BE8C07F01CA71224000A0966 /* Client.c in Sources */ = {isa = PBXBuildFile; fileRef = BE8C07EF1CA71224000A0966 /* Client.c */; };
@@ -29,6 +30,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		974926A21CA9704D00BDFBCC /* Helper.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Helper.c; sourceTree = "<group>"; };
+		974926A31CA9704D00BDFBCC /* Helper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Helper.h; sourceTree = "<group>"; };
 		977F33CD1CA5C03000972562 /* Chat */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Chat; sourceTree = BUILT_PRODUCTS_DIR; };
 		977F33D01CA5C03000972562 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		977F33D71CA5C18200972562 /* ClientToServerMessage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ClientToServerMessage.c; sourceTree = "<group>"; };
@@ -83,9 +86,11 @@
 				BE8C07F11CA77E5C000A0966 /* Server.c */,
 				BE8C07F21CA77E5C000A0966 /* Server.h */,
 				BE8C07EF1CA71224000A0966 /* Client.c */,
-				BE13CAAF1CA6D74000298B5E /* Client.h */,
 				BEBAAE401CA628EF009B658F /* ClientInfo.c */,
+				BE13CAAF1CA6D74000298B5E /* Client.h */,
 				BEBAAE411CA628EF009B658F /* ClientInfo.h */,
+				974926A21CA9704D00BDFBCC /* Helper.c */,
+				974926A31CA9704D00BDFBCC /* Helper.h */,
 				BEF821AC1CA6F4D500BE3867 /* Constants.h */,
 				BEBAAE431CA62ACF009B658F /* DieWithError.c */,
 			);
@@ -149,6 +154,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BEBAAE421CA628EF009B658F /* ClientInfo.c in Sources */,
+				974926A41CA9704D00BDFBCC /* Helper.c in Sources */,
 				977F33D91CA5C18200972562 /* ClientToServerMessage.c in Sources */,
 				BEF821AF1CA6FB4200BE3867 /* ServerToClientMessage.c in Sources */,
 				977F33D11CA5C03000972562 /* main.c in Sources */,
