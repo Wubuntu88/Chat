@@ -10,5 +10,8 @@
 #define Helper_h
 
 #include <stdio.h>
+#include <arpa/inet.h>
 
+void copy_sockaddr_in(struct sockaddr_in *destination, struct sockaddr_in *source);
+int sockadddr_in_are_equal(struct sockaddr_in *first, struct sockaddr_in *second);
 #endif /* Helper_h */
