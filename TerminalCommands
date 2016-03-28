@@ -1,0 +1,3 @@
+To compile and run client
+$ gcc -o client.exe Client.c DieWithError.c 
+$ ./client.exe 3000 4000 127.0.0.1 2001
