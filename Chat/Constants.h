@@ -22,7 +22,7 @@
 #define CLIENT_MESSAGE_SIZE 500
 #define CLIENT_USERNAME_MAX_SIZE 10
 
-#define SERVER_MESSAGE_SIZE 400
+#define SERVER_MESSAGE_SIZE 600
 
 /* max number of users that a server can handle */
 #define MAX_USERS 25
