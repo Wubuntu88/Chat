@@ -24,6 +24,9 @@ int tcpPort;
 char *serverIPAddress;
 unsigned int serverPort;
 
+//keeps track of username for client so that we can send it to the server on logout
+char username[CLIENT_USERNAME_MAX_SIZE];
+
 //socket used for sending messages to the server
 int udpSocket = 0;
 
@@ -40,6 +43,8 @@ struct sockaddr_in serverAddress;
 /* Address of the server that sent a client this message.
  useful if an unknown source sent the client a message*/
 struct sockaddr_in fromAddr;
+
+ClientToServerMessage clientToServerMessage;
 
 /*
  Start of client program
@@ -60,7 +65,7 @@ int main(int argc, const char * argv[]) {
     /* check number of parameters (should be 5) */
     if (argc != 5) {
         char errorMessage[100];
-        sprintf(errorMessage, "Usage: %s <1:Local UDP Port> <2:Local TCP Port> <3:Server IP Address> <4:Server Port>", argv[0]);
+        sprintf(errorMessage, "Usage: %s <1:Local UDP Port> <2:Local TCP Port> <3:Server IP Address> <4:Server Port>\n", argv[0]);
         DieWithError(errorMessage);
     }
     
@@ -69,6 +74,12 @@ int main(int argc, const char * argv[]) {
     tcpPort = atoi(argv[2]);
     serverIPAddress = (char*)argv[3];
     serverPort = atoi(argv[4]);
+    
+    /*setup the clientToServerMessage with reused variables*/
+    memset(&clientToServerMessage, 0, sizeof(clientToServerMessage));
+    clientToServerMessage.udpPort = udpPort;
+    clientToServerMessage.tcpPort = tcpPort;
+
     
     /* Create a datagram/UDP socket */
     if ((udpSocket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
@@ -110,7 +121,7 @@ int main(int argc, const char * argv[]) {
     
     while (1) {//loop forever
         //accept input from user
-        printf(">>");
+        printf("$");
         
         int messageSize = isChatting ? CLIENT_MESSAGE_SIZE : CLIENT_COMMAND_SIZE;
         
@@ -132,7 +143,7 @@ int main(int argc, const char * argv[]) {
             }else if (strncmp(LOGIN, userInput, sizeof(LOGIN)) == 0) {
                 log_in();
             }else if (strncmp(LOGOUT, userInput, sizeof(LOGOUT)) == 0){
-                
+                log_out();
             }else if (strncmp(WHO, userInput, sizeof(WHO)) == 0){
                 
             }else if (strncmp(STATUS, userInput, sizeof(STATUS)) == 0){
@@ -164,55 +175,15 @@ void print_menu(){
     printf("\tctrl-d: terminates chat session with other user\n");
 }
 
-void log_in(){
-    
-    if (isLoggedIn) {//check if user already logged in
-        printf("You are already logged in; to login as another user, logout first, then login again.");
-    } else {//if not logged in, send message to server, get response
-        //get username from user
-        printf("Enter username: ");
-        char username[CLIENT_USERNAME_MAX_SIZE];
-        memset(username, 0, sizeof(username));
-        fgets(username, (int)sizeof(username), stdin);//get input from user
-        int len = (int)strnlen(username, sizeof(username));
-        if(username[len - 1] == '\n'){//get rid of newline
-            username[len - 1] = '\0';
-        }
-        
-        ClientToServerMessage message;
-        memset(&message, 0, sizeof(message));
-        memset(message.content, 0, sizeof(message.content));
-        message.udpPort = udpPort;
-        message.tcpPort = tcpPort;
-        message.requestType = Login;
-        strcpy(message.content, username);
-        printf("content: %s", message.content);
-        strcpy(message.content, "WILL");
-        //send request
-        ServerToClientMessage *servResponse = send_request(message);
-        //check if it was a success or failure
-        if (servResponse->responseType == Success) {
-            isLoggedIn = 1;
-            printf("Login was successful.\nUsers Online:\n%s", servResponse->content);
-        } else if(servResponse->responseType == Failure){
-            printf("Login unsuccessful: %s", servResponse->content);
-        }else{
-            printf("unknown server response type.");
-        }
-        fflush(stdout);
-    }
-}
 
-ServerToClientMessage *send_request(ClientToServerMessage client_to_server_message){
+ServerToClientMessage send_request(ClientToServerMessage client_to_server_message){
     
-    ServerToClientMessage *serverResponse = (ServerToClientMessage *)malloc(sizeof(ServerToClientMessage));
-    //ServerToClientMessage *serverResponse;
+    //ServerToClientMessage *serverResponse = (ServerToClientMessage *)malloc(sizeof(ServerToClientMessage));
+    ServerToClientMessage serverResponse;
     //send request to server
-    printf("size: %lu", sizeof(client_to_server_message));
     if (sendto(udpSocket, &client_to_server_message, sizeof(client_to_server_message), 0, (struct sockaddr *)
                &serverAddress, sizeof(serverAddress)) != sizeof(client_to_server_message))
         DieWithError("sendto() sent a different number of bytes than expected\n unable to send login message");
-    printf("sent data");
     fflush(stdout);
     //get response from server.  Response stored in the servResponse struct
     unsigned int fromSize = sizeof(fromAddr);
@@ -221,6 +192,57 @@ ServerToClientMessage *send_request(ClientToServerMessage client_to_server_messa
         DieWithError("recvfrom() failed");
     
     return serverResponse;
+}
+
+void log_in(){
+    
+    if (isLoggedIn) {//check if user already logged in
+        printf("You are already logged in; to login as another user, logout first, then login again.");
+    } else {//if not logged in, send message to server, get response
+        //get username from user
+        printf("Enter username: ");
+        memset(username, 0, sizeof(username));
+        fgets(username, (int)sizeof(username), stdin);//get input from user
+        int len = (int)strnlen(username, sizeof(username));
+        if(username[len - 1] == '\n'){//get rid of newline
+            username[len - 1] = '\0';
+        }
+        
+        clientToServerMessage.requestType = Login;
+        strcpy(clientToServerMessage.content, username);
+        //send request
+        ServerToClientMessage servResponse = send_request(clientToServerMessage);
+        //check if it was a success or failure
+        if (servResponse.responseType == Success) {
+            isLoggedIn = 1;
+            printf("Login was successful.\nUsers Online:\n%s\n", servResponse.content);
+        } else if(servResponse.responseType == Failure){
+            printf("Login unsuccessful: %s\n", servResponse.content);
+        }else{
+            printf("unknown server response type.\n");
+        }
+        fflush(stdout);
+    }
+}
+
+void log_out(){
+    if (isLoggedIn == 0) {
+        printf("You are not logged in.\n");
+    }else{
+        clientToServerMessage.requestType = Logout;
+        strcpy(clientToServerMessage.content, username);//should be the same; just in case
+        
+        //send message to server; get response
+        ServerToClientMessage servResponse = send_request(clientToServerMessage);
+        if (servResponse.responseType == Success) {
+            isLoggedIn = 0;
+            printf("you successfully logged out as <%s>.\n", username);
+        } else if(servResponse.responseType == Failure){
+            printf("There was and error when logging out.\nServer Response: %s", servResponse.content);
+        }else {
+            printf("unidentified response from server.  Try to log out again.\n");
+        }
+    }
 }
 
 
