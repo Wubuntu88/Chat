@@ -18,4 +18,6 @@ typedef struct {
     int udpPort;
 } Client;
 
+void moveClient(Client *destination, Client *source);
+
 #endif /* ClientInfo_h */
