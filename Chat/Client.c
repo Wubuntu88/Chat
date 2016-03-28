@@ -17,7 +17,6 @@
 #include "ServerToClientMessage.h"
 #include "Constants.h"
 
-//#include "DieWithError.c"
 void DieWithError(char *errorMessage);  /* External error handling function */
 
 int udpPort;
@@ -66,10 +65,10 @@ int main(int argc, const char * argv[]) {
     }
     
     /* set variables that come in through parameters */
-    udpPort = atoi(argv[0]);
-    tcpPort = atoi(argv[1]);
-    serverIPAddress = (char*)argv[2];
-    serverPort = atoi(argv[3]);
+    udpPort = atoi(argv[1]);
+    tcpPort = atoi(argv[2]);
+    serverIPAddress = (char*)argv[3];
+    serverPort = atoi(argv[4]);
     
     /* Create a datagram/UDP socket */
     if ((udpSocket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
@@ -145,10 +144,6 @@ int main(int argc, const char * argv[]) {
             }
         }
         
-        //REMEMBER TO DELETE THE BREAK!!!!
-        break;
-        
-        
         //if statement for if the user needs to communicate with the server
         
         //else statement for if the user is chatting with another user
@@ -177,18 +172,24 @@ void log_in(){
         //get username from user
         printf("Enter username: ");
         char username[CLIENT_USERNAME_MAX_SIZE];
+        memset(username, 0, sizeof(username));
+        fgets(username, (int)sizeof(username), stdin);//get input from user
         int len = (int)strnlen(username, sizeof(username));
         if(username[len - 1] == '\n'){//get rid of newline
             username[len - 1] = '\0';
         }
         
         ClientToServerMessage message;
+        memset(&message, 0, sizeof(message));
+        memset(message.content, 0, sizeof(message.content));
         message.udpPort = udpPort;
         message.tcpPort = tcpPort;
         message.requestType = Login;
-        message.content = username;
+        strcpy(message.content, username);
+        printf("content: %s", message.content);
+        strcpy(message.content, "WILL");
         //send request
-        ServerToClientMessage *servResponse = send_request(&message);
+        ServerToClientMessage *servResponse = send_request(message);
         //check if it was a success or failure
         if (servResponse->responseType == Success) {
             isLoggedIn = 1;
@@ -198,23 +199,25 @@ void log_in(){
         }else{
             printf("unknown server response type.");
         }
-        
+        fflush(stdout);
     }
 }
 
-ServerToClientMessage *send_request(ClientToServerMessage *client_to_server_message){
+ServerToClientMessage *send_request(ClientToServerMessage client_to_server_message){
     
-    //ServerToClientMessage *serverResponse = (ServerToClientMessage *)malloc(sizeof(ServerToClientMessage));
-    ServerToClientMessage *serverResponse;
+    ServerToClientMessage *serverResponse = (ServerToClientMessage *)malloc(sizeof(ServerToClientMessage));
+    //ServerToClientMessage *serverResponse;
     //send request to server
+    printf("size: %lu", sizeof(client_to_server_message));
     if (sendto(udpSocket, &client_to_server_message, sizeof(client_to_server_message), 0, (struct sockaddr *)
                &serverAddress, sizeof(serverAddress)) != sizeof(client_to_server_message))
         DieWithError("sendto() sent a different number of bytes than expected\n unable to send login message");
-    
+    printf("sent data");
+    fflush(stdout);
     //get response from server.  Response stored in the servResponse struct
-    unsigned int fromAddrSize = sizeof(fromAddr);
+    unsigned int fromSize = sizeof(fromAddr);
     if (recvfrom(udpSocket, &serverResponse, sizeof(serverResponse), 0,
-                                  (struct sockaddr *) &fromAddr, &fromAddrSize) != sizeof(ServerToClientMessage))
+                                  (struct sockaddr *) &fromAddr, &fromSize) != sizeof(serverResponse))
         DieWithError("recvfrom() failed");
     
     return serverResponse;

@@ -15,6 +15,6 @@
 
 void print_menu();
 void log_in();
-ServerToClientMessage* send_request(ClientToServerMessage *client_to_server_message);
+ServerToClientMessage* send_request(ClientToServerMessage client_to_server_message);
 
 #endif /* Client_h */
