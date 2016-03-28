@@ -14,7 +14,9 @@
 #include "ClientToServerMessage.h"
 
 void print_menu();
+ServerToClientMessage send_request(ClientToServerMessage client_to_server_message);
 void log_in();
-ServerToClientMessage* send_request(ClientToServerMessage client_to_server_message);
+void log_out();
+
 
 #endif /* Client_h */
