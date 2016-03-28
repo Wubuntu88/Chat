@@ -12,7 +12,6 @@
 #include <stdlib.h>     /* for atoi() and exit() */
 #include <string.h>     /* for memset() */
 
-#include "DieWithError.c"
 #include "Server.h"
 #include "ClientToServerMessage.h"
 #include "ServerToClientMessage.h"
@@ -59,24 +58,36 @@ int main(int argc, char *argv[])
     server_address.sin_addr.s_addr = htonl(INADDR_ANY); /* Any incoming interface */
     server_address.sin_port = htons(server_port);      /* Local port */
     //set up the socket
-    
+    printf("before bind; after socket\n");
     /* Bind to the local address */
     if (bind(sock, (struct sockaddr *) &server_address, sizeof(server_address)) < 0)
         DieWithError("bind() failed");
-    
+    printf("after bind.\n");
     while(1){//loop forever and handle clients requests
         
         //ClientToServerMessage *clientMessage = (ClientToServerMessage *)malloc(sizeof(ClientToServerMessage));
+        //clientMessage->content = (char*)malloc(CLIENT_COMMAND_SIZE);
         ClientToServerMessage clientMessage;
+        //clientMessage.content = (char*)malloc(CLIENT_COMMAND_SIZE);
+        
+        memset(&clientMessage, 0, sizeof(clientMessage));
+        printf("content:%s\n", clientMessage.content);
         /* Set the size of the in-out parameter */
         unsigned int clientAddressLength = sizeof(client_address);
         /* Block until receive message from a client */
+        printf("before recv");
+        fflush(stdout);
         if (recvfrom(sock, &clientMessage, sizeof(clientMessage), 0,
                                     (struct sockaddr *) &client_address, &clientAddressLength) < 0)
             DieWithError("recvfrom() failed");
-        
+        //fprintf("size of struct: %d", sizeof(clientMessage));
+        fflush(stdout);
+        printf("content:%s\n", clientMessage.content);
+        fflush(stdout);
         //handle different types of requests
         if (clientMessage.requestType == Login) {
+            printf("was login\n");
+            fflush(stdout);
             login_user(client_address, clientMessage);
         } else if (clientMessage.requestType == Logout){
             ;
@@ -85,7 +96,7 @@ int main(int argc, char *argv[])
         } else if (clientMessage.requestType == RequestChat){
             ;
         } else {
-            ;
+            fprintf(stderr, "undefined\n");
         }
     }
 }
@@ -114,7 +125,7 @@ void login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMe
     //check if there are too many users to allow a new one to log in
     if (numberOfLoggedInUsers == MAX_USERS) {
         char message[] = "The server cannot handle more users; try again later.";
-        strncpy(serverToClientMessage.content, message, sizeof(message));
+        strcpy(serverToClientMessage.content, message);
         serverToClientMessage.responseType = Failure;
         send_response(clientAddress, serverToClientMessage);
         return;
@@ -132,7 +143,7 @@ void login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMe
         //check of identical username
         if (strncmp(clientMessage.content, currentClient->username, sizeof(currentClient->username)) == 0) {//if that username is taken, send a rejection.
             char message[] = "That username is already taken; choose a different one.";
-            strncpy(serverToClientMessage.content, message, sizeof(message));
+            strcpy(serverToClientMessage.content, message);
             serverToClientMessage.responseType = Failure;
             send_response(clientAddress, serverToClientMessage);
             return;
@@ -141,6 +152,7 @@ void login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMe
     
     //trace that a user has been logged in
     printf("%s has logged in\n", clientMessage.content);
+    
     
     //initialize Client data struct; place user in array of users
     strcpy(currentClient->username, clientMessage.content);
@@ -151,6 +163,7 @@ void login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMe
     //send success response to client with list of users
     sprintf(serverToClientMessage.content, "You successfully logged in as <%s>", currentClient->username);
     serverToClientMessage.responseType = Success;
+    printf("after");
     send_response(clientAddress, serverToClientMessage);
     return;
 }
