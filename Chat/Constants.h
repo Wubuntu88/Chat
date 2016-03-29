@@ -24,6 +24,12 @@
 
 #define SERVER_MESSAGE_SIZE 600
 
+//Message size for client to client message
+#define CLIENT_TO_CLIENT_MESSAGE_SIZE 500
+
+//size is 16: 127:000:000:001 + null terminator
+#define SIZE_OF_ADDRESS 16
+
 /* max number of users that a server can handle */
 #define MAX_USERS 25
 
