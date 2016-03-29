@@ -2,5 +2,5 @@ To compile and run client
 gcc -o client.exe Client.c DieWithError.c 
 ./client.exe 3000 4000 127.0.0.1 2001
 To compile and run server
-gcc -o server.exe Server.c DieWithError.c 
+gcc -o server.exe Server.c DieWithError.c ClientInfo.c Helper.c
 ./server.exe 2001
