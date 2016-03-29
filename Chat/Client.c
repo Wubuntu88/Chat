@@ -11,14 +11,18 @@
 #include <arpa/inet.h>  /* for sockaddr_in and inet_addr() */
 #include <stdlib.h>     /* for atoi() and exit() */
 #include <string.h>     /* for memset() */
+#include <sys/mman.h>   /* for shared memory between processes */
 
 #include "Client.h"
 #include "ClientToServerMessage.h"
 #include "ServerToClientMessage.h"
+#include "ClientInfo.h"
 #include "Constants.h"
+#include "ChatListener.h"
 
 void DieWithError(char *errorMessage);  /* External error handling function */
 void send_who_request();
+void initializeChatListener(int tcpPort, int *chatListenerSocket);
 
 //what is sent to the server for login, logout, who requests,etc
 int udpPort;//used by child process
@@ -26,23 +30,32 @@ int tcpPort;//used by child process
 char *serverIPAddress;
 unsigned int serverPort;
 
+//keeps track of username for client so that we can send it to the server on logout
+char username[CLIENT_USERNAME_MAX_SIZE];
+//keeps track of wheter the user is logged in or not
+//0 means the user is not logged in; 1 means they are logged in
+short isLoggedIn = 0;
+
+//socket used for sending messages to the server
+int udpSocket = 0;//also for receiving acknowladgements from the server.
+
 //child process ids
 int udp_process_id;//for getting messages from the server to the child client proccess
 int tcp_process_id;//for getting messages from another child process to this clients child process
 
-//keeps track of username for client so that we can send it to the server on logout
-char username[CLIENT_USERNAME_MAX_SIZE];
+//sockets that the child processes will use to accept messages from other clients and server
+int *chatListenerSocket;//used to accepts chat messages from other clients (SHARED WITH CHILD PROCESS)
+int *spontaneousServerMessageListenerSocket;//used to get spontaneous
 
-//socket used for sending messages to the server
-int udpSocket = 0;
+//keeps information about the person the user is currently chatting with.
+Client *chattingBuddy; //<---SHARED WITH CHILD PROCESS
 
 //keeps track of whether the user is chatting or not
 //0 means the user is not chatting; 1 means they are chatting
-short isChatting = 0;
-
-//keeps track of wheter the user is logged in or not
-//0 means the user is not logged in; 1 means they are logged in
-short isLoggedIn = 0;
+/* ALL ARE SHARED WITH CHILD PROCESS*/
+int *isChatting = 0;
+int *hasInvited = 0;
+int *isResponding = 0;
 
 /* Server address struct information */
 struct sockaddr_in serverAddress;
@@ -55,15 +68,15 @@ ClientToServerMessage clientToServerMessage;
 /*
  Start of client program
  @param argv[1] local port for udp
- -used by the upd listener that accepts messages from the server.
- The server will send the client a message containing the user ids
- of other clients that have logged in to the chat application.
- -used to create the socket.  A forked child process will use that
- that socket to accept messages from the server
+    -used by the upd listener that accepts messages from the server.
+        The server will send the client a message containing the user ids
+        of other clients that have logged in to the chat application.
+    -used to create the socket.  A forked child process will use that
+        that socket to accept messages from the server
  @param argv[2] local port for tcp
- -used by the tcp listener that accepts chat messages from other clients.
- -used to create a socket.  The socket will be used by a child process to
- accept messages from other clients
+    -used by the tcp listener that accepts chat messages from other clients.
+    -used to create a socket.  The socket will be used by a child process to
+        accept messages from other clients
  @param argv[3] server address: the IP address of the server
  @param argv[4] server port: the port of the server
  */
@@ -86,7 +99,6 @@ int main(int argc, const char * argv[]) {
     clientToServerMessage.udpPort = udpPort;
     clientToServerMessage.tcpPort = tcpPort;
 
-    
     /* Create a datagram/UDP socket */
     if ((udpSocket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
         DieWithError("socket() failed");
@@ -95,10 +107,15 @@ int main(int argc, const char * argv[]) {
      * set up variables for memory sharing amoung processes
      * with inspiration from Dr. Poh's mmap.c program
      */
-    //TODO
+    chatListenerSocket = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+    chattingBuddy = (Client *) mmap(NULL, sizeof(Client), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+    isChatting = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+    hasInvited = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+    isResponding = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+    
     
     //initialize sockets for udp listener and tcp listener
-    //TODO
+    initializeChatListener(tcpPort, chatListenerSocket);
     
     //set up address for the server
     /* Construct the server address structure */
@@ -107,16 +124,9 @@ int main(int argc, const char * argv[]) {
     serverAddress.sin_addr.s_addr = inet_addr(serverIPAddress);  /* Server IP address */
     serverAddress.sin_port   = htons(serverPort);     /* Server port */
     
-    
-    
     //welcome the user
     printf("Welcome to the Chat Application \\^v^/\n");
     print_menu();
-    
-    
-    
-    //create udp socket to send messages to the server (for login, logout, etc)
-    
     
     /*
      * Fork processes for the child that accepts messages from the server
@@ -141,7 +151,7 @@ int main(int argc, const char * argv[]) {
             userInput[len - 1] = '\0';
         }
         
-        if (isChatting) {
+        if (*isChatting) {
             //chat
         } else {//client is giving a command to the server
             if(strncmp(MENU, userInput, sizeof(MENU)) == 0){
@@ -270,7 +280,46 @@ void send_who_request(){
     }
 }
 
-
+void send_chat_request(){
+    if (isLoggedIn == 0) {
+        printf("You are not logged in; please log in before sending a chat request.\n");
+    }else {
+        char friendName[CLIENT_USERNAME_MAX_SIZE];
+        printf("enter username (max %d chars): ", CLIENT_USERNAME_MAX_SIZE - 1);
+        fgets(friendName, CLIENT_USERNAME_MAX_SIZE, stdin);
+        friendName[strlen(friendName) - 1] = '\0';
+        printf("sending invite to %s", friendName);
+        
+        clientToServerMessage.requestType = RequestChat;
+        strcpy(clientToServerMessage.content, friendName);
+        ServerToClientMessage servResponse = send_request(clientToServerMessage);
+        
+        if (servResponse.responseType == Failure) {
+            printf("unable to start chat.\nServer Response: %s\n", servResponse.content);
+            return;
+        }
+        
+        //at this point we know there was a successful response
+        //the friend's address and port number will be in the content of the struct
+        //the format will be: address portNumber.  e.g. 127.0.0.1 200
+        
+        
+        //construct friend address sockaddr_in struct
+        
+        //copy the friend address struct into that of the chattingBuddy in shared memory
+        
+        //also copy the friends name into the chattingBuddy in shared memory
+        
+        //create the tcp socket.  This socket is shared among processes.  The child process
+        //will use it to chat with the other client.
+        
+        //connect
+        
+        //set shared variables so that the child process knows to accept chat messages
+        
+        //directly send invitation to the clientßß
+    }
+}
 
 
 
