@@ -10,7 +10,7 @@
 #include "Helper.h"
 #include <string.h>
 
-void moveClient(Client *destination, Client *source){
+void copyClient(Client *destination, Client *source){
     strcpy(destination->username, source->username);
     copy_sockaddr_in(&destination->address, &source->address);
     destination->tcpPort = source->tcpPort;
