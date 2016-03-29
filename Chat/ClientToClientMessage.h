@@ -11,4 +11,11 @@
 
 #include <stdio.h>
 
+#include "Constants.h"
+
+typedef struct {
+    enum {Success, Failure} responseType;
+    char content[CLIENT_TO_CLIENT_MESSAGE_SIZE];
+} ClientToClientMessage;
+
 #endif /* ClientToClientMessage_h */
