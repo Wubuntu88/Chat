@@ -10,6 +10,7 @@
 		974926A41CA9704D00BDFBCC /* Helper.c in Sources */ = {isa = PBXBuildFile; fileRef = 974926A21CA9704D00BDFBCC /* Helper.c */; };
 		977F33D11CA5C03000972562 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 977F33D01CA5C03000972562 /* main.c */; };
 		977F33D91CA5C18200972562 /* ClientToServerMessage.c in Sources */ = {isa = PBXBuildFile; fileRef = 977F33D71CA5C18200972562 /* ClientToServerMessage.c */; };
+		97A58CCA1CAAD3D7005901B2 /* ChatListener.c in Sources */ = {isa = PBXBuildFile; fileRef = 97A58CC81CAAD3D7005901B2 /* ChatListener.c */; };
 		BE8C07F01CA71224000A0966 /* Client.c in Sources */ = {isa = PBXBuildFile; fileRef = BE8C07EF1CA71224000A0966 /* Client.c */; };
 		BE8C07F31CA77E5C000A0966 /* Server.c in Sources */ = {isa = PBXBuildFile; fileRef = BE8C07F11CA77E5C000A0966 /* Server.c */; };
 		BEBAAE421CA628EF009B658F /* ClientInfo.c in Sources */ = {isa = PBXBuildFile; fileRef = BEBAAE401CA628EF009B658F /* ClientInfo.c */; };
@@ -36,6 +37,8 @@
 		977F33D01CA5C03000972562 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		977F33D71CA5C18200972562 /* ClientToServerMessage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ClientToServerMessage.c; sourceTree = "<group>"; };
 		977F33D81CA5C18200972562 /* ClientToServerMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientToServerMessage.h; sourceTree = "<group>"; };
+		97A58CC81CAAD3D7005901B2 /* ChatListener.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ChatListener.c; sourceTree = "<group>"; };
+		97A58CC91CAAD3D7005901B2 /* ChatListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ChatListener.h; sourceTree = "<group>"; };
 		BE13CAAF1CA6D74000298B5E /* Client.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Client.h; sourceTree = "<group>"; };
 		BE8C07EF1CA71224000A0966 /* Client.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Client.c; sourceTree = "<group>"; };
 		BE8C07F11CA77E5C000A0966 /* Server.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Server.c; sourceTree = "<group>"; };
@@ -87,6 +90,8 @@
 				BE8C07F21CA77E5C000A0966 /* Server.h */,
 				BE8C07EF1CA71224000A0966 /* Client.c */,
 				BE13CAAF1CA6D74000298B5E /* Client.h */,
+				97A58CC81CAAD3D7005901B2 /* ChatListener.c */,
+				97A58CC91CAAD3D7005901B2 /* ChatListener.h */,
 				BEBAAE401CA628EF009B658F /* ClientInfo.c */,
 				BEBAAE411CA628EF009B658F /* ClientInfo.h */,
 				974926A21CA9704D00BDFBCC /* Helper.c */,
@@ -160,6 +165,7 @@
 				977F33D11CA5C03000972562 /* main.c in Sources */,
 				BE8C07F01CA71224000A0966 /* Client.c in Sources */,
 				BE8C07F31CA77E5C000A0966 /* Server.c in Sources */,
+				97A58CCA1CAAD3D7005901B2 /* ChatListener.c in Sources */,
 				BEBAAE441CA62ACF009B658F /* DieWithError.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
