@@ -18,7 +18,7 @@
 #include "Constants.h"
 
 void DieWithError(char *errorMessage);  /* External error handling function */
-
+void send_who_request();
 int udpPort;
 int tcpPort;
 char *serverIPAddress;
@@ -145,7 +145,7 @@ int main(int argc, const char * argv[]) {
             }else if (strncmp(LOGOUT, userInput, sizeof(LOGOUT)) == 0){
                 log_out();
             }else if (strncmp(WHO, userInput, sizeof(WHO)) == 0){
-                
+                send_who_request();
             }else if (strncmp(STATUS, userInput, sizeof(STATUS)) == 0){
                 
             }else if (strncmp(INVITE, userInput, sizeof(INVITE)) == 0){
@@ -197,7 +197,7 @@ ServerToClientMessage send_request(ClientToServerMessage client_to_server_messag
 void log_in(){
     
     if (isLoggedIn) {//check if user already logged in
-        printf("You are already logged in; to login as another user, logout first, then login again.");
+        printf("You are already logged in; to login as another user, logout first, then login again.\n");
     } else {//if not logged in, send message to server, get response
         //get username from user
         printf("Enter username: ");
@@ -238,9 +238,28 @@ void log_out(){
             isLoggedIn = 0;
             printf("you successfully logged out as <%s>.\n", username);
         } else if(servResponse.responseType == Failure){
-            printf("There was and error when logging out.\nServer Response: %s", servResponse.content);
+            printf("There was and error when logging out.\nServer Response: %s\n", servResponse.content);
         }else {
             printf("unidentified response from server.  Try to log out again.\n");
+        }
+    }
+}
+
+void send_who_request(){
+    if (isLoggedIn == 0) {
+        printf("You are not logged in; log in before sending \"who\" requst.\n");
+    }else{
+        clientToServerMessage.requestType = Who;
+        strcpy(clientToServerMessage.content, username);//should be the same; just in case
+        
+        //send message to server; get response
+        ServerToClientMessage servResponse = send_request(clientToServerMessage);
+        if (servResponse.responseType == Success) {
+            printf("Users logged in:\n%s", servResponse.content);
+        }else if(servResponse.responseType == Failure){
+            printf("Unable to process Who request; the server sent a failure signal.\n");
+        }else{
+            printf("Unidentified response from server;  Try the who request again.\n");
         }
     }
 }
