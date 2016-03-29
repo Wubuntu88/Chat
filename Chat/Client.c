@@ -19,10 +19,16 @@
 
 void DieWithError(char *errorMessage);  /* External error handling function */
 void send_who_request();
-int udpPort;
-int tcpPort;
+
+//what is sent to the server for login, logout, who requests,etc
+int udpPort;//used by child process
+int tcpPort;//used by child process
 char *serverIPAddress;
 unsigned int serverPort;
+
+//child process ids
+int udp_process_id;//for getting messages from the server to the child client proccess
+int tcp_process_id;//for getting messages from another child process to this clients child process
 
 //keeps track of username for client so that we can send it to the server on logout
 char username[CLIENT_USERNAME_MAX_SIZE];
