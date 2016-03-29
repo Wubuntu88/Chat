@@ -33,8 +33,10 @@ ServerToClientMessage serverToClientMessage;
 void DieWithError(char *errorMessage);  /* External error handling function */
 /* function used to log the user in.  If successful, new Client is added to users array*/
 int login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
+int logout_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
 void sendUserListToUser(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
 char* userListString();
+void copyClient(Client *destination, Client *source);
 /*
  main method of the server program
  @param: argv[1]: server's port number
@@ -83,7 +85,7 @@ int main(int argc, char *argv[])
         } else if (clientMessage.requestType == Logout){
             int success = logout_user(client_address, clientMessage);
         } else if (clientMessage.requestType == Who){
-            //char* messagePtr = userListString();
+            printf("-%s requested a list of users logged in.\n", clientMessage.content);
             sendUserListToUser(client_address, clientMessage);
         } else if (clientMessage.requestType == RequestChat){
             ;
@@ -149,6 +151,8 @@ int login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMes
     currentClient->address = clientAddress;
     currentClient->udpPort = clientMessage.udpPort;
     currentClient->tcpPort = clientMessage.tcpPort;
+    //increment the number of logged in users
+    numberOfLoggedInUsers++;
     
     //send success response to client with list of users
     sprintf(serverToClientMessage.content, "You successfully logged in as <%s>", currentClient->username);
@@ -176,8 +180,11 @@ int logout_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMe
     }else{//the username was found
         //now I must delete that user if they were found.
         for (; currentClient < exclusiveEnd - 1; currentClient++) {
-            moveClient(currentClient, currentClient + 1);
+            copyClient(currentClient, currentClient + 1);
         }
+        //decrement number of logged in users
+        numberOfLoggedInUsers--;
+        
         char message[] = "Logout successful";
         strcpy(clientMessage.content, message);
         serverToClientMessage.responseType = Success;
@@ -188,7 +195,8 @@ int logout_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMe
 
 void sendUserListToUser(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage){
     char* userList = userListString();
-    strncpy(serverToClientMessage.content, userList, sizeof(serverToClientMessage.content) - 1);
+    
+    strcpy(serverToClientMessage.content, userList);
     serverToClientMessage.content[SERVER_MESSAGE_SIZE - 1] = 0;
     serverToClientMessage.responseType = Success;
     send_response(clientAddress, serverToClientMessage);
@@ -196,6 +204,7 @@ void sendUserListToUser(struct sockaddr_in clientAddress, ClientToServerMessage 
 
 char* userListString(){
     char message[SERVER_MESSAGE_SIZE];
+    memset(message, 0, sizeof(message));
     char *ptr = message;
     
     Client *current;
