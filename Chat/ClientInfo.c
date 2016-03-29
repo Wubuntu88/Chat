@@ -7,7 +7,7 @@
 //
 
 #include "ClientInfo.h"
-#include "Helper.h"
+#include "SockAddrHelper.h"
 #include <string.h>
 
 void copyClient(Client *destination, Client *source){
