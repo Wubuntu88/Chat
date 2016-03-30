@@ -357,6 +357,36 @@ void send_chat_request(){
     }
 }
 
+void respond_to_invitation(char *response){
+    /*
+     * If we are responding to a tcp invitation, the outgoing tcp socket has not been created yet
+     * create the tcp socket.  This socket is shared among processes.
+     * this will allow the parent process to send messages to the other client's
+     * child process that will be accepting tcp messages
+     */
+    if ((*outgoingTCPSocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+        DieWithError("Socket creation failed.\n");
+    }
+    
+    //connect with the other clients child process that is listening for a tcp connection.
+    if (connect(*outgoingTCPSocket, (struct sockaddr *) &chattingBuddy->address, sizeof(chattingBuddy->address)) < 0)
+        DieWithError("connect() failed");
+    
+    ClientToClientMessage c2cMess;
+    memset(&c2cMess, 0, sizeof(c2cMess));
+    if (strcpy(response, YES) == 0) {
+        c2cMess.messageType = Accept;
+        sendTCPMessage(*outgoingTCPSocket, c2cMess);
+        *isChatting = 1;
+    } else {
+        c2cMess.messageType = Reject;
+        sendTCPMessage(*outgoingTCPSocket, c2cMess);
+        *isChatting = 0;
+        close(*outgoingTCPSocket);
+    }
+}
+
+
 /*
  * Kills the two child processes and quits the program
  */
