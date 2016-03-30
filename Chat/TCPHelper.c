@@ -10,19 +10,29 @@
 #include <arpa/inet.h>
 
 #include "TCPHelper.h"
-#include "ClientToClientMessage.h"
 void DieWithError(char *errorMessage);  /* External error handling function */
 
-
-void sendTCPMessage(int socket, ClientToClientMessage clientToClientMessage){
-    long messageLength = sizeof(clientToClientMessage);
-    long bytesSent = send(socket, &clientToClientMessage, sizeof(clientToClientMessage), 0);
-    if (bytesSent != messageLength) {
-        DieWithError("message sent unexpected number of bytes; quit the program.\n");
-    }
+/*
+ * Contents of message may vary depending on whether inviting, rejecting, or chatting
+ * If inviting: "invite" ownUserName ownTcpPort
+ * If reject: "reject" ...?
+ * If chat: 
+ */
+void sendTCPMessage(int socket, char *message){
+    //long messageLength = sizeof(clientToClientMessage);
+    //long bytesSent = send(socket, &message, sizeof(clientToClientMessage), 0);
+    //if (bytesSent != messageLength) {
+    //    DieWithError("message sent unexpected number of bytes; quit the program.\n");
+    //}
 }
-
-ClientToClientMessage receiveTCPMessage(int socket){
-    ClientToClientMessage c2cMess;
+/*
+char* receiveTCPMessage(int socket){
+    
+    long messageLength = sizeof(c2cMess);
+    long bytesSent = recv(socket, &c2cMess, sizeof(c2cMess), 0);
+    if (bytesSent != messageLength) {
+        DieWithError("message received unexpected number of bytes; quit the program.\n");
+    }
     return c2cMess;
 }
+*/
