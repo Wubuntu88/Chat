@@ -12,17 +12,27 @@
 #include <stdlib.h>     /* for atoi() and exit() */
 #include <string.h>     /* for memset() */
 #include <sys/mman.h>   /* for shared memory between processes */
+#include <signal.h>
+#include <unistd.h>
 
 #include "Client.h"
 #include "ClientToServerMessage.h"
 #include "ServerToClientMessage.h"
+#include "ClientToClientMessage.h"
 #include "ClientInfo.h"
 #include "Constants.h"
+#include "SockAddrHelper.h"
+#include "TCPHelper.h"
 #include "ChatListener.h"
 
 void DieWithError(char *errorMessage);  /* External error handling function */
 void send_who_request();
+void quit();
 void initializeChatListener(int tcpPort, int *chatListenerSocket);
+/* method for sending tcp messages to the other clients child process
+ * chat messages, chat requests, and responses to invitations are sent.
+ */
+void sendTCPMessage(int socket, ClientToClientMessage clientToClientMessage);
 
 //what is sent to the server for login, logout, who requests,etc
 int udpPort;//used by child process
@@ -44,8 +54,10 @@ int udp_process_id;//for getting messages from the server to the child client pr
 int tcp_process_id;//for getting messages from another child process to this clients child process
 
 //sockets that the child processes will use to accept messages from other clients and server
-int *chatListenerSocket;//used to accepts chat messages from other clients (SHARED WITH CHILD PROCESS)
-int *spontaneousServerMessageListenerSocket;//used to get spontaneous
+int *chatListenerSocket;//used to accepts chat messages from other clients (TCP)
+int *spontaneousServerMessageListenerSocket;//used to get spontaneous (UDP)
+
+int *outgoingTCPSocket;
 
 //keeps information about the person the user is currently chatting with.
 Client *chattingBuddy; //<---SHARED WITH CHILD PROCESS
@@ -107,7 +119,7 @@ int main(int argc, const char * argv[]) {
      * set up variables for memory sharing amoung processes
      * with inspiration from Dr. Poh's mmap.c program
      */
-    chatListenerSocket = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+    outgoingTCPSocket = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
     chattingBuddy = (Client *) mmap(NULL, sizeof(Client), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
     isChatting = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
     hasInvited = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
@@ -167,7 +179,7 @@ int main(int argc, const char * argv[]) {
             }else if (strncmp(INVITE, userInput, sizeof(INVITE)) == 0){
                 
             }else if (strncmp(QUIT, userInput, sizeof(QUIT)) == 0){
-                
+                quit();
             }
         }
         
@@ -302,26 +314,69 @@ void send_chat_request(){
         //at this point we know there was a successful response
         //the friend's address and port number will be in the content of the struct
         //the format will be: address portNumber.  e.g. 127.0.0.1 200
-        
+        char friendAddressString[SIZE_OF_ADDRESS];
+        int friendPort;
+        sscanf(servResponse.content, "%s %d", friendAddressString, &friendPort);
         
         //construct friend address sockaddr_in struct
+        struct sockaddr_in friendAddress;
+        memset(&friendAddress, 0, sizeof(friendAddress));
+        friendAddress.sin_family = AF_INET;
+        friendAddress.sin_addr.s_addr = inet_addr(friendAddressString);
+        friendAddress.sin_port = htons(friendPort);
         
-        //copy the friend address struct into that of the chattingBuddy in shared memory
+        //copy the friend address struct and username into the chattingBuddy in shared memory
+        memset(&chattingBuddy, 0, sizeof(chattingBuddy));
+        copy_sockaddr_in(&chattingBuddy->address, &friendAddress);
+        strcpy(chattingBuddy->username, friendName);
         
-        //also copy the friends name into the chattingBuddy in shared memory
+        //create the tcp socket.  This socket is shared among processes.
+        //this will allow the parent process to send messages to the other client's
+        //child process that will be accepting tcp messages
+        if ((*outgoingTCPSocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+            DieWithError("Socket creation failed.\n");
+        }
         
-        //create the tcp socket.  This socket is shared among processes.  The child process
-        //will use it to chat with the other client.
-        
-        //connect
+        //connect with the other clients child process that is listening for a tcp connection.
+        if (connect(*outgoingTCPSocket, (struct sockaddr *) &chattingBuddy->address, sizeof(chattingBuddy->address)) < 0)
+            DieWithError("connect() failed");
         
         //set shared variables so that the child process knows to accept chat messages
+        *hasInvited = 1;
         
-        //directly send invitation to the clientßß
+        //directly send invitation to the client
+        //content contains username and tcp port seperated by a space
+        ClientToClientMessage c2cMess;
+        c2cMess.messageType = Invite;
+        //the port that the parent process is listening on, the other program's child
+        //process needs this to send messages to the right port.
+        c2cMess.tcpPort = tcpPort;
+        strcpy(c2cMess.usernameOfSender, username);
+        //send the tcp message to the other client's child process
+        sendTCPMessage(*outgoingTCPSocket, c2cMess);
     }
 }
 
-
+/*
+ * Kills the two child processes and quits the program
+ */
+void quit(){
+    
+    if (isLoggedIn) {
+        printf("Logging you out...\n.");
+        log_out();
+        printf("successfully logged out.\n");
+    }
+    
+    printf("quiting the process...killing all child processes.\n");
+    
+    //killing the child processes to ensure no zombie processes.
+    kill(tcp_process_id, SIGKILL);
+    kill(udp_process_id, SIGKILL);
+    
+    printf("Exiting program; Goodbye.\n");
+    exit(0);
+}
 
 
 
