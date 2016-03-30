@@ -9,12 +9,20 @@
 #include <arpa/inet.h>  /* for sockaddr_in and inet_addr() */
 #include <stdlib.h>     /* for atoi() and exit() */
 #include <string.h>     /* for memset() */
+#include <unistd.h>
 
 #include "ChatListener.h"
+#include "ClientInfo.h"
+#include "ClientToClientMessage.c"
+#include "TCPHelper.h"
+#include "SockAddrHelper.h"
 
 #define MAXIMUM_PENDING_REQUESTS 5
 
 void DieWithError(char *errorMessage);  /* External error handling function */
+ClientToClientMessage receiveTCPMessage(int socket);
+void awaitResponse(int *friendSocket, Client *chattingBuddy, int *isChatting, int *hasInvited, int *hasResponded);
+void receiveInvitation(int *friendSocket, Client *chattingBuddy, int *isChatting, int *hasInvited, int *hasResponded);
 
 /*
  * Initializes the chat listener by creating its socket, binding the socket, and 
@@ -46,13 +54,122 @@ void initializeChatListener(int tcpPort, int *chatListenerSocket){
         DieWithError("listen() failed");
 }
 
-void enter_listening_parallel_universe(){
+void enter_listening_parallel_universe(int *chatListenerSocket, Client *chattingBuddy, int *isChatting, int *hasInvited, int *hasResponded){
+    //create local variables for friend socket, friend address, and len(friend address)
+    int friendSocket;
+    struct sockaddr_in friendAddress;
+    unsigned int friendAddrLength;
     
     while (1) {
-        ;
+        /*
+         * This loop accepts connections from other clients that initiate a chat.
+         * The child process' acceptance will correspond to when the other clients parent process
+         * attempts a connection to this child process
+         */
+        friendSocket = accept(*chatListenerSocket, (struct sockaddr *) &friendAddress, &friendAddrLength);
+        if (friendSocket < 0) {
+            DieWithError("Client's child process unable to accept tcp connection.\n");
+        }
+        //copy friends address to the chattingBuddy's address in shared memory
+        copy_sockaddr_in(&chattingBuddy->address, &friendAddress);
+        
+        /*
+         * If this client invited the other client; we wait for a response
+         */
+        if (*hasInvited) {
+            awaitResponse(&friendSocket, chattingBuddy, isChatting, hasInvited, hasResponded);
+        }
+        /*
+         * If this client was invited to chat; we respond to the invitation.
+         * Note that the response to the invitation will be in the parent process,
+         * so the process that executes this code will have to block until the variable
+         * in shared memory (has responded) is updated by the parent process.  Only then
+         * will we know if the user of this client responded with acceptance or rejection.
+         */
+        else { // this means we were invited; must wait for parent process to accept.
+            receiveInvitation(&friendSocket, chattingBuddy, isChatting, hasInvited, hasResponded);
+            /* now I must block until the parent process accepts.  When the parent process switches
+             * the *hasResponed shared variable to 1, then that means it has responded to the invitation.
+             */
+            while (*hasResponded == 0) {
+                usleep(1000);//sleep for a millisecond
+            }
+        }
+        
+        /*
+         * If we have gotten to this point, that means that out request has been rejected,
+         * and we will do a continue and wait for another connection,
+         * or we have accepted a request or the other person has accepted our request.
+         */
+        if (*isChatting == 0) {//if we are not chatting
+            continue;
+        }else{//this means that we are chatting
+            //do a while loop to accept chat messages from the other user.
+            while (1) {
+                ClientToClientMessage c2cMess = receiveTCPMessage(friendSocket);
+                
+            }
+        }
     }
-    
 }
+
+/*
+ * This method is called to wait for a response to a chat request.  It blocks until it receives a response.
+ * If the response is yes, it sets *isChatting to 1.
+ * If the response is no, it sets *isChatting, *hasInvited, and *hasResponded all to 0;
+ * @param int *friendSocket: this is the tcp socket of the friend child process that is accepting tcp messages
+ * @param Client *chattingBuddy.  The client with whom the chat session is being initiated.
+ */
+void awaitResponse(int *friendSocket, Client *chattingBuddy, int *isChatting, int *hasInvited, int *hasResponded){
+    //get the response by calling receiveTCPMessage(int socket)
+    ClientToClientMessage c2cMess = receiveTCPMessage(*friendSocket);
+    
+    //check whether the other client accepted or declined the request
+    if (c2cMess.messageType == Accept) {
+        printf("%s accepted your chat request.\n", c2cMess.usernameOfSender);
+        *isChatting = 1;
+    } else if (c2cMess.messageType == Reject){
+        printf("%s declined your chat request.\n", c2cMess.usernameOfSender);
+        *isChatting = 0;
+        *hasInvited = 0;
+        *hasResponded = 0;
+        close(*friendSocket);
+    }else {
+        printf("Unexpected response from server; canceled chat request.\n");
+        *isChatting = 0;
+        *hasInvited = 0;
+        *hasResponded = 0;
+        close(*friendSocket);
+    }
+}
+
+void receiveInvitation(int *friendSocket, Client *chattingBuddy, int *isChatting, int *hasInvited, int *hasResponded){
+    ClientToClientMessage c2cMess = receiveTCPMessage(*friendSocket);
+    
+    printf("%s requested to chat with you.\n", chattingBuddy->username);
+    printf("Do you accept or decline? (yes/no): ");
+    fflush(stdout);
+    
+    chattingBuddy->tcpPort = c2cMess.tcpPort;
+    strcpy(chattingBuddy->username, c2cMess.usernameOfSender);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
