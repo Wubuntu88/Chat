@@ -17,6 +17,10 @@
 #define INVITE "invite"
 #define QUIT "quit"
 
+/* constants for accepting or rejecting chat requests*/
+#define YES "yes"
+#define NO "no"
+
 /* Sizes of types of messages the client can send */
 #define CLIENT_COMMAND_SIZE 20
 #define CLIENT_MESSAGE_SIZE 500
