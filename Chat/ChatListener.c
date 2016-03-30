@@ -46,7 +46,13 @@ void initializeChatListener(int tcpPort, int *chatListenerSocket){
         DieWithError("listen() failed");
 }
 
-
+void enter_listening_parallel_universe(){
+    
+    while (1) {
+        ;
+    }
+    
+}
 
 
 
