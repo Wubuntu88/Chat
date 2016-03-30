@@ -67,7 +67,7 @@ Client *chattingBuddy; //<---SHARED WITH CHILD PROCESS
 /* ALL ARE SHARED WITH CHILD PROCESS*/
 int *isChatting = 0;
 int *hasInvited = 0;
-int *isResponding = 0;
+int *hasResponded = 0;
 
 /* Server address struct information */
 struct sockaddr_in serverAddress;
@@ -123,7 +123,7 @@ int main(int argc, const char * argv[]) {
     chattingBuddy = (Client *) mmap(NULL, sizeof(Client), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
     isChatting = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
     hasInvited = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
-    isResponding = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+    hasResponded = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
     
     
     //initialize sockets for udp listener and tcp listener
@@ -155,7 +155,9 @@ int main(int argc, const char * argv[]) {
         
         char userInput[messageSize];
         memset(userInput, 0, sizeof(userInput));
-        fgets(userInput, (int)sizeof(userInput), stdin);//get input from user
+        
+        //if the user types ctrl-d, fgets will return a null pointer (i.e. 0)
+        char* potentialNullPointer = fgets(userInput, (int)sizeof(userInput), stdin);
         
         //eliminates newline character when user gives input
         int len = (int)strnlen(userInput, sizeof(userInput));
@@ -164,7 +166,10 @@ int main(int argc, const char * argv[]) {
         }
         
         if (*isChatting) {
-            //chat
+            //I must send a tcp message to the other clients child process that is waiting
+            //for my chatting or response.
+            //I should create a specialized method in this class to send a tcp message to that client
+            //I shoud keep in mind the control-d character that the user may have used to end the chatting
         } else {//client is giving a command to the server
             if(strncmp(MENU, userInput, sizeof(MENU)) == 0){
                 print_menu();
@@ -232,7 +237,7 @@ void log_in(){
         memset(username, 0, sizeof(username));
         fgets(username, (int)sizeof(username), stdin);//get input from user
         int len = (int)strnlen(username, sizeof(username));
-        if(username[len - 1] == '\n'){//get rid of newline
+        if(username[len - 1] == '\n'){//get rid of pesky newline character
             username[len - 1] = '\0';
         }
         
