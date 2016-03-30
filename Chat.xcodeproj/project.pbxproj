@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		970CBA601CAB345600E92CF3 /* TCPHelper.c in Sources */ = {isa = PBXBuildFile; fileRef = 970CBA5E1CAB345600E92CF3 /* TCPHelper.c */; };
-		970CBA631CAB34B100E92CF3 /* ClientToClientMessage.c in Sources */ = {isa = PBXBuildFile; fileRef = 970CBA611CAB34B100E92CF3 /* ClientToClientMessage.c */; };
 		974926A41CA9704D00BDFBCC /* SockAddrHelper.c in Sources */ = {isa = PBXBuildFile; fileRef = 974926A21CA9704D00BDFBCC /* SockAddrHelper.c */; };
 		977F33D11CA5C03000972562 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 977F33D01CA5C03000972562 /* main.c */; };
 		977F33D91CA5C18200972562 /* ClientToServerMessage.c in Sources */ = {isa = PBXBuildFile; fileRef = 977F33D71CA5C18200972562 /* ClientToServerMessage.c */; };
@@ -35,8 +34,6 @@
 /* Begin PBXFileReference section */
 		970CBA5E1CAB345600E92CF3 /* TCPHelper.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = TCPHelper.c; sourceTree = "<group>"; };
 		970CBA5F1CAB345600E92CF3 /* TCPHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TCPHelper.h; sourceTree = "<group>"; };
-		970CBA611CAB34B100E92CF3 /* ClientToClientMessage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ClientToClientMessage.c; sourceTree = "<group>"; };
-		970CBA621CAB34B100E92CF3 /* ClientToClientMessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClientToClientMessage.h; sourceTree = "<group>"; };
 		974926A21CA9704D00BDFBCC /* SockAddrHelper.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SockAddrHelper.c; sourceTree = "<group>"; };
 		974926A31CA9704D00BDFBCC /* SockAddrHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SockAddrHelper.h; sourceTree = "<group>"; };
 		977F33CD1CA5C03000972562 /* Chat */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Chat; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -88,18 +85,32 @@
 			isa = PBXGroup;
 			children = (
 				977F33D01CA5C03000972562 /* main.c */,
-				BEF821AD1CA6FB4200BE3867 /* ServerToClientMessage.c */,
-				BEF821AE1CA6FB4200BE3867 /* ServerToClientMessage.h */,
-				977F33D71CA5C18200972562 /* ClientToServerMessage.c */,
-				977F33D81CA5C18200972562 /* ClientToServerMessage.h */,
-				970CBA611CAB34B100E92CF3 /* ClientToClientMessage.c */,
-				970CBA621CAB34B100E92CF3 /* ClientToClientMessage.h */,
 				BE8C07F11CA77E5C000A0966 /* Server.c */,
 				BE8C07F21CA77E5C000A0966 /* Server.h */,
 				BE8C07EF1CA71224000A0966 /* Client.c */,
 				BE13CAAF1CA6D74000298B5E /* Client.h */,
 				97A58CC81CAAD3D7005901B2 /* ChatListener.c */,
 				97A58CC91CAAD3D7005901B2 /* ChatListener.h */,
+				BE8C07F51CAB68F1000A0966 /* Helpers */,
+				BE8C07F41CAB68C4000A0966 /* MessageStructs */,
+			);
+			path = Chat;
+			sourceTree = "<group>";
+		};
+		BE8C07F41CAB68C4000A0966 /* MessageStructs */ = {
+			isa = PBXGroup;
+			children = (
+				BEF821AD1CA6FB4200BE3867 /* ServerToClientMessage.c */,
+				BEF821AE1CA6FB4200BE3867 /* ServerToClientMessage.h */,
+				977F33D71CA5C18200972562 /* ClientToServerMessage.c */,
+				977F33D81CA5C18200972562 /* ClientToServerMessage.h */,
+			);
+			name = MessageStructs;
+			sourceTree = "<group>";
+		};
+		BE8C07F51CAB68F1000A0966 /* Helpers */ = {
+			isa = PBXGroup;
+			children = (
 				BEBAAE401CA628EF009B658F /* ClientInfo.c */,
 				BEBAAE411CA628EF009B658F /* ClientInfo.h */,
 				974926A21CA9704D00BDFBCC /* SockAddrHelper.c */,
@@ -109,7 +120,7 @@
 				BEF821AC1CA6F4D500BE3867 /* Constants.h */,
 				BEBAAE431CA62ACF009B658F /* DieWithError.c */,
 			);
-			path = Chat;
+			name = Helpers;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -169,7 +180,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				BEBAAE421CA628EF009B658F /* ClientInfo.c in Sources */,
-				970CBA631CAB34B100E92CF3 /* ClientToClientMessage.c in Sources */,
 				974926A41CA9704D00BDFBCC /* SockAddrHelper.c in Sources */,
 				977F33D91CA5C18200972562 /* ClientToServerMessage.c in Sources */,
 				970CBA601CAB345600E92CF3 /* TCPHelper.c in Sources */,
