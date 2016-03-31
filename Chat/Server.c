@@ -17,6 +17,7 @@
 #include "ServerToClientMessage.h"
 #include "ClientInfo.h"
 #include "Constants.h"
+#include "SockAddrHelper.h"
 
 int sock = 0;
 
@@ -37,6 +38,7 @@ int logout_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMe
 void sendUserListToUser(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
 char* userListString();
 void copyClient(Client *destination, Client *source);
+void handleUserInfoRequest(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
 /*
  main method of the server program
  @param: argv[1]: server's port number
@@ -87,8 +89,8 @@ int main(int argc, char *argv[])
         } else if (clientMessage.requestType == Who){
             printf("-%s requested a list of users logged in.\n", clientMessage.content);
             sendUserListToUser(client_address, clientMessage);
-        } else if (clientMessage.requestType == RequestChat){
-            ;
+        } else if (clientMessage.requestType == UserInfo){
+            handleUserInfoRequest(client_address, clientMessage);
         } else {
             fprintf(stderr, "undefined\n");
         }
@@ -220,6 +222,24 @@ char* userListString(){
     ptr = 0;//null terminate the message
     char *retVal = message;
     return retVal;
+}
+
+void handleUserInfoRequest(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage){
+    Client *currentClient;
+    Client *exclusiveEnd = users + numberOfLoggedInUsers;
+    
+    for (currentClient = users; currentClient < exclusiveEnd; currentClient++) {
+        if (strncmp(currentClient->username, clientMessage.content, sizeof(currentClient->username)) == 0) {
+            break;//we found the current client
+        }
+    }
+    
+    ServerToClientMessage serv2cMess;
+    serv2cMess.responseType = Success;
+    serv2cMess.tcpPort = currentClient->tcpPort;
+    strcpy(serv2cMess.content, currentClient->username);
+    copy_sockaddr_in(&serv2cMess.address, &currentClient->address);
+    send_response(clientAddress, serv2cMess);
 }
 
 
