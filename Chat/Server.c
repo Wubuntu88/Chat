@@ -90,6 +90,8 @@ int main(int argc, char *argv[])
             printf("-%s requested a list of users logged in.\n", clientMessage.content);
             sendUserListToUser(client_address, clientMessage);
         } else if (clientMessage.requestType == UserInfo){
+            printf("handling getInfo\n");
+            fflush(stdout);
             handleUserInfoRequest(client_address, clientMessage);
         } else {
             fprintf(stderr, "undefined\n");

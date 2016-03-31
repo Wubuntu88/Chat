@@ -72,7 +72,7 @@ Client *chattingBuddy; //<---SHARED WITH CHILD PROCESS
 //0 means the user is not chatting; 1 means they are chatting
 /* ALL ARE SHARED WITH CHILD PROCESS*/
 int *isChatting = 0;
-int *hasInvited = 0;
+int *hasBeenInvited = 0;
 int *hasResponded = 0;
 
 /* Server address struct information */
@@ -128,7 +128,7 @@ int main(int argc, const char * argv[]) {
     outgoingTCPSocket = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
     chattingBuddy = (Client *) mmap(NULL, sizeof(Client), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
     isChatting = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
-    hasInvited = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+    hasBeenInvited = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
     hasResponded = (int *) mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
     
     printf("before init\n");
@@ -155,8 +155,9 @@ int main(int argc, const char * argv[]) {
     
     tcp_process_id = fork();
     if (tcp_process_id == 0) {
-        enter_listening_parallel_universe(&chatListenerSocket, chattingBuddy, isChatting, hasInvited, hasResponded);
+        enter_listening_parallel_universe(&chatListenerSocket, chattingBuddy, isChatting, hasBeenInvited, hasResponded);
     }
+    
     printf("child process id: %d\n", tcp_process_id);
     
     while (1) {//loop forever
@@ -177,7 +178,9 @@ int main(int argc, const char * argv[]) {
             userInput[len - 1] = '\0';
         }
         
-        if (*isChatting) {
+        printf("parent process isChatting: %d", *isChatting);
+        
+        if (*isChatting || *hasBeenInvited) {
             //I must send a tcp message to the other clients child process that is waiting
             //for my chatting or response.
             //I should create a specialized method in this class to send a tcp message to that client
@@ -233,7 +236,7 @@ ServerToClientMessage send_request(ClientToServerMessage client_to_server_messag
     if (recvfrom(udpSocket, &serverResponse, sizeof(serverResponse), 0,
                                   (struct sockaddr *) &fromAddr, &fromSize) != sizeof(serverResponse))
         DieWithError("recvfrom() failed");
-    
+    printf("passed recv\n");
     return serverResponse;
 }
 
@@ -315,7 +318,6 @@ void send_chat_request(){
         printf("enter username (max %d chars): ", CLIENT_USERNAME_MAX_SIZE - 1);
         fgets(friendName, CLIENT_USERNAME_MAX_SIZE, stdin);
         friendName[strlen(friendName) - 1] = '\0';
-        printf("sending invite to %s", friendName);
         
         clientToServerMessage.requestType = UserInfo;
         strcpy(clientToServerMessage.content, friendName);
@@ -325,6 +327,7 @@ void send_chat_request(){
             printf("unable to start chat.\nServer Response: %s\n", servResponse.content);
             return;
         }
+        printf("username: %s, port: %d", servResponse.content, servResponse.tcpPort);
         
         //at this point we know there was a successful response
         //the friend's address and port number will be in the content of the struct
@@ -338,7 +341,6 @@ void send_chat_request(){
          */
         
         //copy the friend address struct and username into the chattingBuddy in shared memory
-        memset(&chattingBuddy, 0, sizeof(chattingBuddy));
         copy_sockaddr_in(&chattingBuddy->address, &friendAddress);
         strcpy(chattingBuddy->username, friendName);
         
@@ -354,7 +356,8 @@ void send_chat_request(){
             DieWithError("connect() failed");
         
         //set shared variables so that the child process knows to accept chat messages
-        *hasInvited = 1;
+        *hasBeenInvited = 1;
+        
         
         //directly send invitation to the client
         //content contains username and tcp port seperated by a space
@@ -380,10 +383,13 @@ void respond_to_invitation(char *response){
         DieWithError("Socket creation failed.\n");
     }
     
+    printf("&&&hey its %s: ", chattingBuddy->username);
+    fflush(stdout);
     //connect with the other clients child process that is listening for a tcp connection.
     if (connect(*outgoingTCPSocket, (struct sockaddr *) &chattingBuddy->address, sizeof(chattingBuddy->address)) < 0)
         DieWithError("connect() failed");
-    
+    printf("after here\n");
+    fflush(stdout);
     ClientToClientMessage c2cMess;
     memset(&c2cMess, 0, sizeof(c2cMess));
     if (strcpy(response, YES) == 0) {
@@ -422,6 +428,8 @@ void quit(){
 
 void send_tcp_message_to_client(char *message, char *potentialNullPointer){
     if (*hasResponded == 0) {
+        printf("here here\n");
+        fflush(stdout);
         respond_to_invitation(message);
     } else {
         ClientToClientMessage c2cMess;
@@ -430,7 +438,7 @@ void send_tcp_message_to_client(char *message, char *potentialNullPointer){
         if (potentialNullPointer == 0) {//if we received ctrl-d from the other client
             c2cMess.messageType = EndOfTransmission;
             *isChatting = 0;
-            *hasInvited = 0;
+            *hasBeenInvited = 0;
             *hasResponded = 1;
             sendTCPMessage(*outgoingTCPSocket, c2cMess);
             
@@ -438,9 +446,10 @@ void send_tcp_message_to_client(char *message, char *potentialNullPointer){
             kill(tcp_process_id, SIGKILL);
             tcp_process_id = fork();
             if (tcp_process_id == 0) {//if we are in the child process
-                enter_listening_parallel_universe(&chatListenerSocket, chattingBuddy, isChatting, hasInvited, hasResponded);
+                enter_listening_parallel_universe(&chatListenerSocket, chattingBuddy, isChatting, hasBeenInvited, hasResponded);
             }
         }else { // regular chatting
+            
             c2cMess.messageType = Chat;
             strcpy(c2cMess.content, message);
             sendTCPMessage(*outgoingTCPSocket, c2cMess);

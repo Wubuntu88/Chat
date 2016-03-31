@@ -21,8 +21,8 @@
 
 void DieWithError(char *errorMessage);  /* External error handling function */
 ClientToClientMessage receiveTCPMessage(int socket);
-void awaitResponse(int *friendSocket, Client *chattingBuddy, int *isChatting, int *hasInvited, int *hasResponded);
-void receiveInvitation(int *friendSocket, Client *chattingBuddy, int *isChatting, int *hasInvited, int *hasResponded);
+void awaitResponse(int *friendSocket, Client *chattingBuddy, int *isChatting, int *hasBeenInvited, int *hasResponded);
+void receiveInvitation(int *friendSocket, Client *chattingBuddy, int *isChatting, int *hasBeenInvited, int *hasResponded);
 
 /*
  * Initializes the chat listener by creating its socket, binding the socket, and 
@@ -54,7 +54,7 @@ void initializeChatListener(int tcpPort, int *chatListenerSocket){
         DieWithError("listen() failed");
 }
 
-void enter_listening_parallel_universe(int *chatListenerSocket, Client *chattingBuddy, int *isChatting, int *hasInvited, int *hasResponded){
+void enter_listening_parallel_universe(int *chatListenerSocket, Client *chattingBuddy, int *isChatting, int *hasBeenInvited, int *hasResponded){
     //create local variables for friend socket, friend address, and len(friend address)
     int friendSocket;
     struct sockaddr_in friendAddress;
@@ -66,20 +66,20 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
          * The child process' acceptance will correspond to when the other clients parent process
          * attempts a connection to this child process
          */
-        printf("accepting connection.\n");
-        fflush(stdout);
+
         friendSocket = accept(*chatListenerSocket, (struct sockaddr *) &friendAddress, &friendAddrLength);
         if (friendSocket < 0) {
             DieWithError("Client's child process unable to accept tcp connection.\n");
         }
         //copy friends address to the chattingBuddy's address in shared memory
         copy_sockaddr_in(&chattingBuddy->address, &friendAddress);
+        chattingBuddy->address.sin_family = AF_INET;
         
         /*
          * If this client invited the other client; we wait for a response
          */
-        if (*hasInvited) {
-            awaitResponse(&friendSocket, chattingBuddy, isChatting, hasInvited, hasResponded);
+        if (*hasBeenInvited) {
+            awaitResponse(&friendSocket, chattingBuddy, isChatting, hasBeenInvited, hasResponded);
         }
         /*
          * If this client was invited to chat; we respond to the invitation.
@@ -89,7 +89,7 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
          * will we know if the user of this client responded with acceptance or rejection.
          */
         else { // this means we were invited; must wait for parent process to accept.
-            receiveInvitation(&friendSocket, chattingBuddy, isChatting, hasInvited, hasResponded);
+            receiveInvitation(&friendSocket, chattingBuddy, isChatting, hasBeenInvited, hasResponded);
             /* now I must block until the parent process accepts.  When the parent process switches
              * the *hasResponed shared variable to 1, then that means it has responded to the invitation.
              */
@@ -109,7 +109,15 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
             //do a while loop to accept chat messages from the other user.
             while (1) {
                 ClientToClientMessage c2cMess = receiveTCPMessage(friendSocket);
-                
+                if (c2cMess.messageType == EndOfTransmission) {
+                    printf("Your friend has ended communication.\n");
+                    fflush(stdout);
+                    *isChatting = 0;
+                    close(friendSocket);
+                    break;
+                }else{
+                    fprintf(stdout, "%s: %s\n", c2cMess.usernameOfSender, c2cMess.content);
+                }
             }
         }
     }
@@ -122,7 +130,7 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
  * @param int *friendSocket: this is the tcp socket of the friend child process that is accepting tcp messages
  * @param Client *chattingBuddy.  The client with whom the chat session is being initiated.
  */
-void awaitResponse(int *friendSocket, Client *chattingBuddy, int *isChatting, int *hasInvited, int *hasResponded){
+void awaitResponse(int *friendSocket, Client *chattingBuddy, int *isChatting, int *hasBeenInvited, int *hasResponded){
     //get the response by calling receiveTCPMessage(int socket)
     ClientToClientMessage c2cMess = receiveTCPMessage(*friendSocket);
     
@@ -130,30 +138,33 @@ void awaitResponse(int *friendSocket, Client *chattingBuddy, int *isChatting, in
     if (c2cMess.messageType == Accept) {
         printf("%s accepted your chat request.\n", c2cMess.usernameOfSender);
         *isChatting = 1;
+        printf("child's isChatting: %d", *isChatting);
     } else if (c2cMess.messageType == Reject){
         printf("%s declined your chat request.\n", c2cMess.usernameOfSender);
         *isChatting = 0;
-        *hasInvited = 0;
+        *hasBeenInvited = 0;
         *hasResponded = 0;
         close(*friendSocket);
     }else {
         printf("Unexpected response from server; canceled chat request.\n");
         *isChatting = 0;
-        *hasInvited = 0;
+        *hasBeenInvited = 0;
         *hasResponded = 0;
         close(*friendSocket);
     }
 }
 
-void receiveInvitation(int *friendSocket, Client *chattingBuddy, int *isChatting, int *hasInvited, int *hasResponded){
+void receiveInvitation(int *friendSocket, Client *chattingBuddy, int *isChatting, int *hasBeenInvited, int *hasResponded){
     ClientToClientMessage c2cMess = receiveTCPMessage(*friendSocket);
-    
+    *hasBeenInvited = 1;
     printf("%s requested to chat with you.\n", chattingBuddy->username);
     printf("Do you accept or decline? (yes/no): ");
     fflush(stdout);
     
     chattingBuddy->tcpPort = c2cMess.tcpPort;
     strcpy(chattingBuddy->username, c2cMess.usernameOfSender);
+    printf("hey its : %s", chattingBuddy->username);
+    
 }
 
 
