@@ -1,6 +1,6 @@
 To compile and run client
-gcc -o client.exe Client.c DieWithError.c 
+gcc -o client.exe Client.c SockAddrHelper.c ChatListener.c TCPHelper.c DieWithError.c
 ./client.exe 3000 4000 127.0.0.1 2001
 To compile and run server
-gcc -o server.exe Server.c DieWithError.c ClientInfo.c Helper.c
+gcc -o server.exe Server.c DieWithError.c ClientInfo.c TCPHelper.c SockAddrHelper.c
 ./server.exe 2001
