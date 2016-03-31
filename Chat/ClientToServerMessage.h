@@ -23,7 +23,7 @@ typedef struct {
      */
     int udpPort;
     int tcpPort;
-    enum {Login, Logout, Who, RequestChat, Status} requestType;
+    enum {Login, Logout, Who, UserInfo, Status} requestType;
     char content[CLIENT_COMMAND_SIZE];
 }ClientToServerMessage;
 
