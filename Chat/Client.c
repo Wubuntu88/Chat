@@ -33,6 +33,8 @@ void initializeChatListener(int tcpPort, int *chatListenerSocket);
  * chat messages, chat requests, and responses to invitations are sent.
  */
 void sendTCPMessage(int socket, ClientToClientMessage clientToClientMessage);
+void enter_listening_parallel_universe(int *chatListenerSocket, Client *chattingBuddy, int *isChatting, int *hasInvited, int *hasResponded);
+void send_tcp_message_to_client(char *message, char *potentialNullPointer);
 
 //what is sent to the server for login, logout, who requests,etc
 int udpPort;//used by child process
@@ -145,7 +147,10 @@ int main(int argc, const char * argv[]) {
      * and for the child that accepts messages from the other chat client.
      * The parent process will send messages to the server (login, logout, etc)
      */
-    
+    tcp_process_id = fork();
+    if (tcp_process_id == 0) {
+        enter_listening_parallel_universe(chatListenerSocket, chattingBuddy, isChatting, hasInvited, hasResponded);
+    }
     
     while (1) {//loop forever
         //accept input from user
@@ -170,6 +175,7 @@ int main(int argc, const char * argv[]) {
             //for my chatting or response.
             //I should create a specialized method in this class to send a tcp message to that client
             //I shoud keep in mind the control-d character that the user may have used to end the chatting
+            send_tcp_message_to_client(userInput, potentialNullPointer);
         } else {//client is giving a command to the server
             if(strncmp(MENU, userInput, sizeof(MENU)) == 0){
                 print_menu();
@@ -187,11 +193,6 @@ int main(int argc, const char * argv[]) {
                 quit();
             }
         }
-        
-        //if statement for if the user needs to communicate with the server
-        
-        //else statement for if the user is chatting with another user
-        
     }
     return 0;
 }
@@ -413,6 +414,33 @@ void quit(){
     exit(0);
 }
 
+void send_tcp_message_to_client(char *message, char *potentialNullPointer){
+    if (*hasResponded == 0) {
+        respond_to_invitation(message);
+    } else {
+        ClientToClientMessage c2cMess;
+        memset(&c2cMess, 0, sizeof(c2cMess));
+        strcpy(c2cMess.usernameOfSender, username);
+        if (potentialNullPointer == 0) {//if we received ctrl-d from the other client
+            c2cMess.messageType = EndOfTransmission;
+            *isChatting = 0;
+            *hasInvited = 0;
+            *hasResponded = 1;
+            sendTCPMessage(*outgoingTCPSocket, c2cMess);
+            
+            //now I must close the socket and kill the child process
+            kill(tcp_process_id, SIGKILL);
+            tcp_process_id = fork();
+            if (tcp_process_id == 0) {//if we are in the child process
+                enter_listening_parallel_universe(chatListenerSocket, chattingBuddy, isChatting, hasInvited, hasResponded);
+            }
+        }else { // regular chatting
+            c2cMess.messageType = Chat;
+            strcpy(c2cMess.content, message);
+            sendTCPMessage(*outgoingTCPSocket, c2cMess);
+        }
+    }
+}
 
 
 
