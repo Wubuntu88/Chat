@@ -162,6 +162,7 @@ void receiveInvitation(int *friendSocket, Client *chattingBuddy, int *isChatting
     fflush(stdout);
     
     chattingBuddy->tcpPort = c2cMess.tcpPort;
+    chattingBuddy->address.sin_port = htons(c2cMess.tcpPort);//wild guess
     strcpy(chattingBuddy->username, c2cMess.usernameOfSender);
     printf("hey its : %s", chattingBuddy->username);
     
