@@ -66,6 +66,8 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
          * The child process' acceptance will correspond to when the other clients parent process
          * attempts a connection to this child process
          */
+        printf("accepting connection.\n");
+        fflush(stdout);
         friendSocket = accept(*chatListenerSocket, (struct sockaddr *) &friendAddress, &friendAddrLength);
         if (friendSocket < 0) {
             DieWithError("Client's child process unable to accept tcp connection.\n");
