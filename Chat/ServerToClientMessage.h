@@ -16,6 +16,8 @@
 typedef struct {
     enum {Success, Failure} responseType;
     char content[SERVER_MESSAGE_SIZE];
+    int tcpPort;
+    struct sockaddr_in address;
 } ServerToClientMessage;
 
 #endif /* ServerToClientMessage_h */
