@@ -39,6 +39,7 @@ void sendUserListToUser(struct sockaddr_in clientAddress, ClientToServerMessage 
 char* userListString();
 void copyClient(Client *destination, Client *source);
 void handleUserInfoRequest(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
+void copy_sockaddr_in(struct sockaddr_in *destination, struct sockaddr_in *source);
 /*
  main method of the server program
  @param: argv[1]: server's port number
@@ -152,7 +153,9 @@ int login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMes
     
     //initialize Client data struct; place user in array of users
     strcpy(currentClient->username, clientMessage.content);
-    currentClient->address = clientAddress;
+    //WILL CHANGE
+    copy_sockaddr_in(&currentClient->address, &clientAddress);
+    //currentClient->address = clientAddress;
     currentClient->udpPort = clientMessage.udpPort;
     currentClient->tcpPort = clientMessage.tcpPort;
     //increment the number of logged in users
