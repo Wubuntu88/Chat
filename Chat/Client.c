@@ -169,14 +169,17 @@ int main(int argc, const char * argv[]) {
         
         //if the user types ctrl-d, fgets will return a null pointer (i.e. 0)
         char* potentialNullPointer = fgets(userInput, (int)sizeof(userInput), stdin);
-        
+        if (potentialNullPointer == 0) {
+            //clearing stdin if ctrl-d was pressed cuz if ctrl-d is pressed, stdin gets borked
+            clearerr(stdin);
+        }
         //eliminates newline character when user gives input
         int len = (int)strnlen(userInput, sizeof(userInput));
         if(userInput[len - 1] == '\n'){
             userInput[len - 1] = '\0';
         }
         
-        //printf("parent process isChatting: %d\n", *isChatting);
+        printf("parent process isChatting: %d\n", *isChatting);
         
         if (*isChatting || *outstandingInvite) {
             //I must send a tcp message to the other clients child process that is waiting
@@ -448,6 +451,8 @@ void send_tcp_message_to_client(char *message, char *potentialNullPointer){
             if (tcp_process_id == 0) {//if we are in the child process
                 enter_listening_parallel_universe(&chatListenerSocket, chattingBuddy, isChatting, outstandingInvite, hasResponded);
             }
+            printf("terminating connection.\n");
+            fflush(stdout);
         }else { // regular chatting
             
             c2cMess.messageType = Chat;

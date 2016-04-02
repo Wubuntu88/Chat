@@ -11,7 +11,30 @@
 #include <string.h>
 
 int main(int argc, const char * argv[]) {
-    // insert code here...
+    
+    while (1) {
+        char userInput[10];
+        memset(userInput, 0, sizeof(userInput));
+        
+        //if the user types ctrl-d, fgets will return a null pointer (i.e. 0)
+        printf("enter something: ");
+        char *potentialNullPointer = fgets(userInput, (int)sizeof(userInput), stdin);
+        if (potentialNullPointer == 0) {
+            printf("hey\n");
+            fflush(stdout);
+            clearerr(stdin);
+        }
+        //eliminates newline character when user gives input
+        int len = (int)strnlen(userInput, sizeof(userInput));
+        if(userInput[len - 1] == '\n'){
+            userInput[len - 1] = '\0';
+        }
+        if (strcmp(userInput, "quit") == 0) {
+            break;
+        }
+    }
+    printf("exited\n");
+    /*
     char str[20];
     printf("enter something: ");
     char* ptr = fgets(str, sizeof(str), stdin);
@@ -20,6 +43,7 @@ int main(int argc, const char * argv[]) {
     }
     
     printf("len: %lu", strlen(str));
+     */
     /*
     int makeMillis = 1000;
     int numberMillis = 300;

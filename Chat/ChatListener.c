@@ -58,7 +58,9 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
     //create local variables for friend socket, friend address, and len(friend address)
     int friendSocket;
     struct sockaddr_in friendAddress;
-    unsigned int friendAddrLength;
+    //IMPORTANT!!! I HAD NOT ASSIGNED FRIENDADDRLEN TO SIZEOF(FRIENDADDRESS)
+    //this means that it was some random number or 0
+    unsigned int friendAddrLength = sizeof(friendAddress);
     
     while (1) {
         /*
@@ -66,12 +68,12 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
          * The child process' acceptance will correspond to when the other clients parent process
          * attempts a connection to this child process
          */
-        printf("before child accept.\n");
+        //printf("before child accept.\n");
         friendSocket = accept(*chatListenerSocket, (struct sockaddr *) &friendAddress, &friendAddrLength);
         if (friendSocket < 0) {
             DieWithError("Client's child process unable to accept tcp connection.\n");
         }
-        printf("after child accept.\n");
+        //printf("after child accept.\n");
         //copy friends address to the chattingBuddy's address in shared memory
         //copy_sockaddr_in(&chattingBuddy->address, &friendAddress);
         //chattingBuddy->address.sin_family = AF_INET;
@@ -91,7 +93,7 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
          * will we know if the user of this client responded with acceptance or rejection.
          */
         else { // this means we were invited; must wait for parent process to accept.
-            printf("responding to invitation.\n");
+            //printf("responding to invitation.\n");
             receiveInvitation(&friendSocket, &friendAddress, chattingBuddy, isChatting, outstandingInvite, hasResponded);
             /* now I must block until the parent process accepts.  When the parent process switches
              * the *hasResponed shared variable to 1, then that means it has responded to the invitation.
@@ -116,6 +118,8 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
                     printf("Your friend has ended communication.\n");
                     fflush(stdout);
                     *isChatting = 0;
+                    *outstandingInvite = 0;
+                    *hasResponded = 1;
                     close(friendSocket);
                     break;
                 }else{
@@ -165,10 +169,9 @@ void receiveInvitation(int *friendSocket, struct sockaddr_in *friendAddress, Cli
     fflush(stdout);
     
     copy_sockaddr_in(&chattingBuddy->address, friendAddress);
-    //chattingBuddy->tcpPort = c2cMess.tcpPort;
-    chattingBuddy->address.sin_addr.s_addr = inet_addr("127.0.0.1");
+    printf("actual s_addr: %d\n", chattingBuddy->address.sin_addr.s_addr);
     chattingBuddy->address.sin_family = AF_INET;
-    chattingBuddy->address.sin_port = htons(c2cMess.tcpPort);//wild guess
+    chattingBuddy->address.sin_port = htons(c2cMess.tcpPort);
     
     strcpy(chattingBuddy->username, c2cMess.usernameOfSender);
     printf("(child) hey its %s: , port: %d", chattingBuddy->username, chattingBuddy->address.sin_port);
