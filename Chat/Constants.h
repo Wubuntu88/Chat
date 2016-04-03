@@ -13,7 +13,6 @@
 #define LOGIN "login"
 #define LOGOUT "logout"
 #define WHO "who"
-#define STATUS "status"
 #define INVITE "invite"
 #define QUIT "quit"
 

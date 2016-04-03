@@ -54,12 +54,10 @@ void initializeChatListener(int tcpPort, int *chatListenerSocket){
         DieWithError("listen() failed");
 }
 
-void enter_listening_parallel_universe(int *chatListenerSocket, Client *chattingBuddy, int *isChatting, int *outstandingInvite, int *hasResponded){
+void enter_listening_parallel_universe(int *chatListenerSocket, Client *chattingBuddy, int *isChatting, int *outstandingInvite, int *hasResponded, int *friendSuddentlyTerminatedChat){
     //create local variables for friend socket, friend address, and len(friend address)
     int friendSocket;
     struct sockaddr_in friendAddress;
-    //IMPORTANT!!! I HAD NOT ASSIGNED FRIENDADDRLEN TO SIZEOF(FRIENDADDRESS)
-    //this means that it was some random number or 0
     unsigned int friendAddrLength = sizeof(friendAddress);
     
     while (1) {
@@ -73,16 +71,12 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
         if (friendSocket < 0) {
             DieWithError("Client's child process unable to accept tcp connection.\n");
         }
-        //printf("after child accept.\n");
-        //copy friends address to the chattingBuddy's address in shared memory
-        //copy_sockaddr_in(&chattingBuddy->address, &friendAddress);
-        //chattingBuddy->address.sin_family = AF_INET;
+
         
         /*
          * If this client invited the other client; we wait for a response
          */
         if (*outstandingInvite) {
-            printf("awaiting response.\n");
             awaitResponse(&friendSocket, chattingBuddy, isChatting, outstandingInvite, hasResponded);
         }
         /*
@@ -114,12 +108,14 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
             //do a while loop to accept chat messages from the other user.
             while (1) {
                 ClientToClientMessage c2cMess = receiveTCPMessage(friendSocket);
+                printf("got message\n");
                 if (c2cMess.messageType == EndOfTransmission) {
                     printf("Your friend has ended communication.\n");
                     fflush(stdout);
                     *isChatting = 0;
                     *outstandingInvite = 0;
-                    *hasResponded = 1;
+                    *hasResponded = 0;
+                    *friendSuddentlyTerminatedChat = 1;
                     close(friendSocket);
                     break;
                 }else{
@@ -145,7 +141,6 @@ void awaitResponse(int *friendSocket, Client *chattingBuddy, int *isChatting, in
     if (c2cMess.messageType == Accept) {
         printf("%s accepted your chat request.\n", c2cMess.usernameOfSender);
         *isChatting = 1;
-        printf("child's isChatting: %d\n", *isChatting);
     } else if (c2cMess.messageType == Reject){
         printf("%s declined your chat request.\n", c2cMess.usernameOfSender);
         *isChatting = 0;
@@ -169,13 +164,9 @@ void receiveInvitation(int *friendSocket, struct sockaddr_in *friendAddress, Cli
     fflush(stdout);
     
     copy_sockaddr_in(&chattingBuddy->address, friendAddress);
-    printf("actual s_addr: %d\n", chattingBuddy->address.sin_addr.s_addr);
     chattingBuddy->address.sin_family = AF_INET;
     chattingBuddy->address.sin_port = htons(c2cMess.tcpPort);
-    
     strcpy(chattingBuddy->username, c2cMess.usernameOfSender);
-    printf("(child) hey its %s: , port: %d", chattingBuddy->username, chattingBuddy->address.sin_port);
-    
 }
 
 

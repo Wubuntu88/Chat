@@ -40,6 +40,7 @@ char* userListString();
 void copyClient(Client *destination, Client *source);
 void handleUserInfoRequest(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
 void copy_sockaddr_in(struct sockaddr_in *destination, struct sockaddr_in *source);
+void broadcastUserListToAllExcept(char* username);
 /*
  main method of the server program
  @param: argv[1]: server's port number
@@ -84,9 +85,11 @@ int main(int argc, char *argv[])
         //handle different types of requests
         if (clientMessage.requestType == Login) {
             int success = login_user(client_address, clientMessage);
-            //still must send all other users a list of logged in users if login was a success
+            if (success) {
+                broadcastUserListToAllExcept(clientMessage.content);
+            }
         } else if (clientMessage.requestType == Logout){
-            int success = logout_user(client_address, clientMessage);
+            logout_user(client_address, clientMessage);
         } else if (clientMessage.requestType == Who){
             printf("-%s requested a list of users logged in.\n", clientMessage.content);
             sendUserListToUser(client_address, clientMessage);
@@ -153,7 +156,7 @@ int login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMes
     
     //initialize Client data struct; place user in array of users
     strcpy(currentClient->username, clientMessage.content);
-    //WILL CHANGE
+    
     copy_sockaddr_in(&currentClient->address, &clientAddress);
     //currentClient->address = clientAddress;
     currentClient->udpPort = clientMessage.udpPort;
@@ -162,7 +165,12 @@ int login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMes
     numberOfLoggedInUsers++;
     
     //send success response to client with list of users
-    sprintf(serverToClientMessage.content, "You successfully logged in as <%s>", currentClient->username);
+    char* userList = userListString();
+    char list[500];
+    strcpy(list, userList);
+    list[strlen(list) - 1] = 0;
+    
+    sprintf(serverToClientMessage.content, "You successfully logged in as <%s>\nUsers Online:\n%s", currentClient->username, list);
     serverToClientMessage.responseType = Success;
     send_response(clientAddress, serverToClientMessage);
     return 1;
@@ -232,22 +240,53 @@ char* userListString(){
 void handleUserInfoRequest(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage){
     Client *currentClient;
     Client *exclusiveEnd = users + numberOfLoggedInUsers;
-    
+    int userWasFound = 0;
     for (currentClient = users; currentClient < exclusiveEnd; currentClient++) {
         if (strncmp(currentClient->username, clientMessage.content, sizeof(currentClient->username)) == 0) {
+            userWasFound = 1;
             break;//we found the current client
         }
     }
-    
     ServerToClientMessage serv2cMess;
-    serv2cMess.responseType = Success;
-    serv2cMess.tcpPort = currentClient->tcpPort;
-    strcpy(serv2cMess.content, currentClient->username);
-    copy_sockaddr_in(&serv2cMess.address, &currentClient->address);
-    send_response(clientAddress, serv2cMess);
+    if (userWasFound) {
+        serv2cMess.responseType = Success;
+        serv2cMess.tcpPort = currentClient->tcpPort;
+        strcpy(serv2cMess.content, currentClient->username);
+        copy_sockaddr_in(&serv2cMess.address, &currentClient->address);
+        send_response(clientAddress, serv2cMess);
+    } else {
+        serv2cMess.responseType = Failure;
+        char message[100];
+        sprintf(message, "%s was not found in the list of users.", clientMessage.content);
+        strcpy(serv2cMess.content, message);
+        send_response(clientAddress, serv2cMess);
+    }
+    
 }
 
-
+void broadcastUserListToAllExcept(char* username){
+    char* userList = userListString();
+    
+    Client *current;
+    Client *exclusiveEnd = users + numberOfLoggedInUsers;
+    
+    for (current = users; current < exclusiveEnd; current++) {
+        printf("@@loop@@\n");
+        fflush(stdout);
+        
+        if (strcmp(current->username, username) != 0) {//if it is not the exempt user...
+            struct sockaddr_in addressToSendTo;
+            ServerToClientMessage serv2cMess;
+            
+            strcpy(serv2cMess.content, userList);
+            //serv2cMess.content[SERVER_MESSAGE_SIZE - 1] = 0;
+            serv2cMess.responseType = Success;
+            copy_sockaddr_in(&addressToSendTo, &current->address);
+            addressToSendTo.sin_port = htons(current->udpPort);
+            send_response(addressToSendTo, serv2cMess);
+        }
+    }
+}
 
 
 
