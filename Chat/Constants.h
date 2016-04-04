@@ -2,6 +2,8 @@
 //  Constants.h
 //  Chat
 //
+//  This file contains some constants used throughout the programs
+//
 //  Created by William Edward Gillespie on 3/26/16.
 //  Copyright © 2016 EMU. All rights reserved.
 //
