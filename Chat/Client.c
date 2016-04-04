@@ -2,6 +2,10 @@
 //  Client.c
 //  Chat
 //
+//  This client program interacts with the Server.c program and other clients.
+//  This program can login to the server, see which users are online, and
+//  chat with other clients.
+//
 //  Created by William Edward Gillespie on 3/26/16.
 //  Copyright © 2016 EMU. All rights reserved.
 //
@@ -63,7 +67,7 @@ int tcp_process_id;//for getting messages from another child process to this cli
 //sockets that the child processes will use to accept messages from other clients and server
 int chatListenerSocket;//used to accepts chat messages from other clients (TCP)
 int spontaneousServerMessageListenerSocket;//used to get spontaneous (UDP)
-
+//for sending messages to other clients
 int *outgoingTCPSocket;
 
 //keeps information about the person the user is currently chatting with.
@@ -82,7 +86,7 @@ struct sockaddr_in serverAddress;
 /* Address of the server that sent a client this message.
  useful if an unknown source sent the client a message*/
 struct sockaddr_in fromAddr;
-
+//reused struct for sending messages to the server
 ClientToServerMessage clientToServerMessage;
 
 /*
@@ -154,20 +158,19 @@ int main(int argc, const char * argv[]) {
      * and for the child that accepts messages from the other chat client.
      * The parent process will send messages to the server (login, logout, etc)
      */
-    /*
+    
     tcp_process_id = fork();
     if (tcp_process_id == 0) {
         enter_listening_parallel_universe(&chatListenerSocket, chattingBuddy, isChatting, outstandingInvite, hasResponded, friendSuddentlyTerminatedChat);
     }
-    */
+    
     udp_process_id = fork();
     if (udp_process_id == 0) {
         enterListenForServerMessagesParallelUniverse(&spontaneousServerMessageListenerSocket);
     }
     
     while (1) {//loop forever
-        //accept input from user
-        printf(">");
+        printf("#");
         
         int messageSize = isChatting ? CLIENT_MESSAGE_SIZE : CLIENT_COMMAND_SIZE;
         
@@ -187,25 +190,20 @@ int main(int argc, const char * argv[]) {
         }
         
         if (*isChatting || *outstandingInvite) {
-            printf("entered chatting");
-            fflush(stdout);
             //I must send a tcp message to the other clients child process that is waiting
             //for my chatting or response.
             //I should create a specialized method in this class to send a tcp message to that client
             //I shoud keep in mind the control-d character that the user may have used to end the chatting
             send_tcp_message_to_client(userInput, potentialNullPointer);
         } else {//client is giving a command to the server
-            printf("entered not chatting\n");
-            fflush(stdout);
             if (*friendSuddentlyTerminatedChat) {
                 kill(tcp_process_id, SIGKILL);
                 //close(*outgoingTCPSocket);
-                tcp_process_id = fork();
+                tcp_process_id = fork();//child process rebirthed
                 if (tcp_process_id == 0) {//if we are in the child process
                     enter_listening_parallel_universe(&chatListenerSocket, chattingBuddy, isChatting, outstandingInvite, hasResponded, friendSuddentlyTerminatedChat);
                 }
                 *friendSuddentlyTerminatedChat = 0;
-                printf("child process rebirthed.\n");
             }
             
             if(strncmp(MENU, userInput, sizeof(MENU)) == 0){
@@ -228,6 +226,9 @@ int main(int argc, const char * argv[]) {
     return 0;
 }
 
+/*
+ * Prints a menu for actions a user can choose from.
+ */
 void print_menu(){
     printf("Options:\n");
     printf("\t%s: shows the menu\n", MENU);
@@ -239,7 +240,10 @@ void print_menu(){
     printf("\tctrl-d: terminates chat session with other user\n");
 }
 
-
+/*
+ * A generic sending message that sends a client message to the server
+ * @param ClientToServerMessage
+ */
 ServerToClientMessage send_request(ClientToServerMessage client_to_server_message){
     
     ServerToClientMessage serverResponse;
@@ -247,8 +251,6 @@ ServerToClientMessage send_request(ClientToServerMessage client_to_server_messag
     if (sendto(udpSocket, &client_to_server_message, sizeof(client_to_server_message), 0, (struct sockaddr *)
                &serverAddress, sizeof(serverAddress)) != sizeof(client_to_server_message))
         DieWithError("sendto() sent a different number of bytes than expected\n unable to send login message");
-    printf("sent the chat request.\n");
-    fflush(stdout);
     //get response from server.  Response stored in the servResponse struct
     unsigned int fromSize = sizeof(fromAddr);
     if (recvfrom(udpSocket, &serverResponse, sizeof(serverResponse), 0,
@@ -257,6 +259,10 @@ ServerToClientMessage send_request(ClientToServerMessage client_to_server_messag
     return serverResponse;
 }
 
+/*
+ * Sends a login message to the server.  First checks to see that client is not already
+ * logged in, then prompts for a username.  The server may reject the login attempt.
+ */
 void log_in(){
     
     if (isLoggedIn) {//check if user already logged in
@@ -288,6 +294,10 @@ void log_in(){
     }
 }
 
+/*
+ * Sends a logout message to the server.  Only sends the message if the user is logged in.
+ * The server may reject the login attempt (e.g. if there is already a user with that name).
+ */
 void log_out(){
     if (isLoggedIn == 0) {
         printf("You are not logged in.\n");
@@ -308,6 +318,10 @@ void log_out(){
     }
 }
 
+/*
+ * Sends a request to the server for a list of logged in users.  If the server
+ * sends back a "Success" in the responseType enum field, the list of users is displayed.
+ */
 void send_who_request(){
     if (isLoggedIn == 0) {
         printf("You are not logged in; log in before sending \"who\" requst.\n");
@@ -327,6 +341,12 @@ void send_who_request(){
     }
 }
 
+/*
+ * This method requests a chat with another client.
+ * First, it sends a request for user info (e.g. address and tcp port).
+ * with that information, it sets up an outgoing tcp socket and directly sends a
+ * request to the other client to chat.
+ */
 void send_chat_request(){
     if (isLoggedIn == 0) {
         printf("You are not logged in; please log in before sending a chat request.\n");
@@ -386,6 +406,13 @@ void send_chat_request(){
     }
 }
 
+/*
+ * This method responds to an invite sent by another user.  It creates an outgoing tcp socket
+ * and sends a response to the inviter based on the response of the input ("yes" or "no").
+ * note that the input from the user is gotten elsewhere and not in this method.
+ * @param char *response.  The response to the invitation ("yes" or "no").
+ * in fact, if the user types anything besides "yes" it is regarded as no.
+ */
 void respond_to_invitation(char *response){
     /*
      * If we are responding to a tcp invitation, the outgoing tcp socket has not been created yet
@@ -403,15 +430,16 @@ void respond_to_invitation(char *response){
     
     ClientToClientMessage c2cMess;
     memset(&c2cMess, 0, sizeof(c2cMess));
-    if (strcmp(response, YES) == 0) {
+    if (strcmp(response, YES) == 0) {//accept invitation
         c2cMess.messageType = Accept;
         strcpy(c2cMess.usernameOfSender, username);
         sendTCPMessage(*outgoingTCPSocket, c2cMess);
         *isChatting = 1;
         *hasResponded = 1;
         *outstandingInvite = 0;
-    } else {
+    } else {//reject invitation
         c2cMess.messageType = Reject;
+        strcpy(c2cMess.usernameOfSender, username);
         sendTCPMessage(*outgoingTCPSocket, c2cMess);
         *isChatting = 0;
         *hasResponded = 1;
@@ -420,30 +448,13 @@ void respond_to_invitation(char *response){
     }
 }
 
-
 /*
- * Kills the two child processes and quits the program
+ * Sends a tcp message to the client that this client is chatting with.
+ * The message can either be to respond to an invite to chat, a termination
+ * of the chat (using ctrl-d), or a regular chatting message.
  */
-void quit(){
-    
-    if (isLoggedIn) {
-        printf("Logging you out...\n.");
-        log_out();
-        printf("successfully logged out.\n");
-    }
-    
-    printf("quiting the process...killing all child processes.\n");
-    
-    //killing the child processes to ensure no zombie processes.
-    kill(tcp_process_id, SIGKILL);
-    kill(udp_process_id, SIGKILL);
-    
-    printf("Exiting program; Goodbye.\n");
-    exit(0);
-}
-
 void send_tcp_message_to_client(char *message, char *potentialNullPointer){
-    if (*hasResponded == 0) {
+    if (*hasResponded == 0 && *isChatting == 0) {//if we are responding to an invite
         respond_to_invitation(message);
     } else {//in this else we are in a chat
         ClientToClientMessage c2cMess;
@@ -473,17 +484,23 @@ void send_tcp_message_to_client(char *message, char *potentialNullPointer){
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/*
+ * Kills the two child processes and quits the program
+ */
+void quit(){
+    
+    if (isLoggedIn) {
+        printf("Logging you out...\n.");
+        log_out();
+        printf("successfully logged out.\n");
+    }
+    
+    printf("quiting the process...killing all child processes.\n");
+    
+    //killing the child processes to ensure no zombie processes.
+    kill(tcp_process_id, SIGKILL);
+    kill(udp_process_id, SIGKILL);
+    
+    printf("Exiting program; Goodbye.\n");
+    exit(0);
+}
