@@ -1,0 +1,13 @@
+To compile client:
+gcc -o client.exe Client.c SockAddrHelper.c ChatListener.c TCPHelper.c DieWithError.c
+To run 3 clients:
+./client.exe 3000 4000 127.0.0.1 2001
+./client.exe 5000 6000 127.0.0.1 2001
+./client.exe 7000 8000 127.0.0.1 2001
+
+To compile server:
+gcc -o server.exe Server.c DieWithError.c ClientInfo.c TCPHelper.c SockAddrHelper.c
+To run server:
+./server.exe 2001
+
+Note: There is a small bug in the program.  It happens during a chat session when someone presses ctrl-d to terminate a chat session.  When the person who received the ctrl-d initiates chat request with others, others are able to send them messages, but the sender cannot send messages.  In every other way it works.  Even the person who sent the ctrl-d can re-invite the person and it works fine.  It is only this awkward special scenario where it bugs out.  There may be other bugs, but this is the only one that I found.
