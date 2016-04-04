@@ -2,6 +2,10 @@
 //  Server.c
 //  Chat
 //
+//  This server accepts logins and requests from clients.
+//  It can log users in and out, it can respond to who requests,
+//  and it can send many users a list of all users when a a new user logs in.
+//
 //  Created by William Edward Gillespie on 3/26/16.
 //  Copyright © 2016 EMU. All rights reserved.
 //
@@ -35,7 +39,7 @@ void DieWithError(char *errorMessage);  /* External error handling function */
 /* function used to log the user in.  If successful, new Client is added to users array*/
 int login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
 int logout_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
-void sendUserListToUser(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
+void sendUserListToUser(struct sockaddr_in clientAddress);
 char* userListString();
 void copyClient(Client *destination, Client *source);
 void handleUserInfoRequest(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage);
@@ -72,6 +76,9 @@ int main(int argc, char *argv[])
     /* Bind to the local address */
     if (bind(sock, (struct sockaddr *) &server_address, sizeof(server_address)) < 0)
         DieWithError("bind() failed");
+    
+    printf("Setup complete; ready to go!\n");
+    
     while(1){//loop forever and handle clients requests
         ClientToServerMessage clientMessage;
         
@@ -92,7 +99,7 @@ int main(int argc, char *argv[])
             logout_user(client_address, clientMessage);
         } else if (clientMessage.requestType == Who){
             printf("-%s requested a list of users logged in.\n", clientMessage.content);
-            sendUserListToUser(client_address, clientMessage);
+            sendUserListToUser(client_address);
         } else if (clientMessage.requestType == UserInfo){
             printf("handling getInfo\n");
             fflush(stdout);
@@ -176,6 +183,17 @@ int login_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMes
     return 1;
 }
 
+/*
+ * Logs out a user.  The user is removed from an array of users.
+ * When the user is removed, a confirmation is sent back to the client.
+ * If the user could not be logged out because they were not found, a message to that
+ * effect is sent back to the user with a "Failure" responseType.  However, this should
+ * never happen because on the client side, the user cannot send a logout request when
+ * that name is not already stored on the server; this check is done just in case.
+ * @param: struct sockaddr_in clientAddress: the address to send the confirmation to.
+ * @param: ClientToServerMessage: used to logout the user.  Note: the valuable username
+ * is stored in the clientMessage.content variable.
+ */
 int logout_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage){
     //must find the user in the list of users by iterating through list of users
     Client *currentClient;
@@ -197,9 +215,9 @@ int logout_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMe
         for (; currentClient < exclusiveEnd - 1; currentClient++) {
             copyClient(currentClient, currentClient + 1);
         }
-        //decrement number of logged in users
-        numberOfLoggedInUsers--;
+        numberOfLoggedInUsers--;//decrement number of logged in users
         
+        printf("%s logged out.\n", clientMessage.content);
         char message[] = "Logout successful";
         strcpy(clientMessage.content, message);
         serverToClientMessage.responseType = Success;
@@ -208,15 +226,24 @@ int logout_user(struct sockaddr_in clientAddress, ClientToServerMessage clientMe
     }
 }
 
-void sendUserListToUser(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage){
+/*
+ * This method sends a string containg the list of logged in usernames to the client at 
+ * the clientAddress.
+ * @param: struct sockaddr_in clientAddress: the address to send the userlist to.
+ */
+void sendUserListToUser(struct sockaddr_in clientAddress){
     char* userList = userListString();
-    
     strcpy(serverToClientMessage.content, userList);
     serverToClientMessage.content[SERVER_MESSAGE_SIZE - 1] = 0;
     serverToClientMessage.responseType = Success;
     send_response(clientAddress, serverToClientMessage);
 }
 
+/*
+ * Returns a list of usernames of the users that are currently logged in.
+ * Each name is seperated by a newline character.
+ * @return char*: The list of usernames of users that are logged in.
+ */
 char* userListString(){
     char message[SERVER_MESSAGE_SIZE];
     memset(message, 0, sizeof(message));
@@ -237,6 +264,13 @@ char* userListString(){
     return retVal;
 }
 
+/*
+ * Sends a message to the requesting user containing the tcp port number and address
+ * of the desired user.  If the user was not found, then a failure is sent back to the requesting user.
+ * @param: struct sockaddr_in clientAddress: the address to send the confirmation to.
+ * @param: ClientToServerMessage: used to get the information on who to retrieve.
+ *          The desired username is located in the clientMessage.content variable.
+ */
 void handleUserInfoRequest(struct sockaddr_in clientAddress, ClientToServerMessage clientMessage){
     Client *currentClient;
     Client *exclusiveEnd = users + numberOfLoggedInUsers;
@@ -264,6 +298,12 @@ void handleUserInfoRequest(struct sockaddr_in clientAddress, ClientToServerMessa
     
 }
 
+/*
+ * This method broadcasts the userlist to all logged in users, except the one in the input
+ * This is because the user that logged in should be exempt from this message because they
+ * receive a list of users with the acknowledgement of being logged in.
+ * @param: char* username - the name of the user who will not be sent the list of users.
+ */
 void broadcastUserListToAllExcept(char* username){
     char* userList = userListString();
     
@@ -271,15 +311,10 @@ void broadcastUserListToAllExcept(char* username){
     Client *exclusiveEnd = users + numberOfLoggedInUsers;
     
     for (current = users; current < exclusiveEnd; current++) {
-        printf("@@loop@@\n");
-        fflush(stdout);
-        
         if (strcmp(current->username, username) != 0) {//if it is not the exempt user...
             struct sockaddr_in addressToSendTo;
             ServerToClientMessage serv2cMess;
-            
             strcpy(serv2cMess.content, userList);
-            //serv2cMess.content[SERVER_MESSAGE_SIZE - 1] = 0;
             serv2cMess.responseType = Success;
             copy_sockaddr_in(&addressToSendTo, &current->address);
             addressToSendTo.sin_port = htons(current->udpPort);
@@ -287,24 +322,3 @@ void broadcastUserListToAllExcept(char* username){
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
