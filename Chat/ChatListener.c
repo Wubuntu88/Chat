@@ -2,6 +2,11 @@
 //  ChatListener.c
 //  Chat
 //
+//  This class is meant for the child process created by the Client.c program.
+//  The child process will be initialized with the initializeChatListener() method.
+//  The child process will be stuck in the enter_listening_parallel_universe() method
+//  after the child process is forked.
+//
 //  Created by  on 3/29/16.
 //  Copyright © 2016 EMU. All rights reserved.
 //
@@ -54,6 +59,18 @@ void initializeChatListener(int tcpPort, int *chatListenerSocket){
         DieWithError("listen() failed");
 }
 
+/*
+ * This method is for a child process of the Client.c file.  When a child process is forked, 
+ * the child will enter this method (a.k.a. "parallel universe").  It will stay here and listen
+ * for incomming tcp connections.  The parent process of another client will initiate those messages.
+ * All of the input parameters are in shared memory with the Client.c parent process.
+ * @param: int *chatListenerSocket
+ * @param: Client *chattingBuddy
+ * @param: int *isChatting
+ * @param: int *outstandingInvite
+ * @param: int *hasResponded
+ * @param: int *friendSuddentlyTerminatedChat
+ */
 void enter_listening_parallel_universe(int *chatListenerSocket, Client *chattingBuddy, int *isChatting, int *outstandingInvite, int *hasResponded, int *friendSuddentlyTerminatedChat){
     //create local variables for friend socket, friend address, and len(friend address)
     int friendSocket;
@@ -66,13 +83,11 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
          * The child process' acceptance will correspond to when the other clients parent process
          * attempts a connection to this child process
          */
-        //printf("before child accept.\n");
         friendSocket = accept(*chatListenerSocket, (struct sockaddr *) &friendAddress, &friendAddrLength);
         if (friendSocket < 0) {
             DieWithError("Client's child process unable to accept tcp connection.\n");
         }
 
-        
         /*
          * If this client invited the other client; we wait for a response
          */
@@ -95,6 +110,7 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
             while (*hasResponded == 0) {
                 usleep(1000);//sleep for a millisecond
             }
+            *hasResponded = 0;
         }
         
         /*
@@ -108,7 +124,6 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
             //do a while loop to accept chat messages from the other user.
             while (1) {
                 ClientToClientMessage c2cMess = receiveTCPMessage(friendSocket);
-                printf("got message\n");
                 if (c2cMess.messageType == EndOfTransmission) {
                     printf("Your friend has ended communication.\n");
                     fflush(stdout);
@@ -116,7 +131,6 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
                     *outstandingInvite = 0;
                     *hasResponded = 0;
                     *friendSuddentlyTerminatedChat = 1;
-                    close(friendSocket);
                     break;
                 }else{
                     fprintf(stdout, "%s: %s\n", c2cMess.usernameOfSender, c2cMess.content);
@@ -132,6 +146,9 @@ void enter_listening_parallel_universe(int *chatListenerSocket, Client *chatting
  * If the response is no, it sets *isChatting, *hasInvited, and *hasResponded all to 0;
  * @param int *friendSocket: this is the tcp socket of the friend child process that is accepting tcp messages
  * @param Client *chattingBuddy.  The client with whom the chat session is being initiated.
+ * @param: int *isChatting
+ * @param: int *outstandingInvite
+ * @param: int *hasResponded
  */
 void awaitResponse(int *friendSocket, Client *chattingBuddy, int *isChatting, int *outstandingInvite, int *hasResponded){
     //get the response by calling receiveTCPMessage(int socket)
@@ -146,16 +163,28 @@ void awaitResponse(int *friendSocket, Client *chattingBuddy, int *isChatting, in
         *isChatting = 0;
         *outstandingInvite = 0;
         *hasResponded = 0;
-        close(*friendSocket);
+        //close(*friendSocket);
     }else {
         printf("Unexpected response from server; canceled chat request.\n");
         *isChatting = 0;
         *outstandingInvite = 0;
         *hasResponded = 0;
-        close(*friendSocket);
+        //close(*friendSocket);
     }
 }
 
+/*
+ * Sets the chattingBuddy's address and prompts the user if they want to accept or decline the invite.
+ * note that the accepting is done in the parent process.  The child process gets the request and must
+ * print out the prompt, but the parent process allows the user to respond.  The parent process will
+ * be waiting for the user to give input.
+ * @param: int *chatListenerSocket
+ * @param: Client *chattingBuddy
+ * @param: int *isChatting
+ * @param: int *outstandingInvite
+ * @param: int *hasResponded
+ * @param: int *friendSuddentlyTerminatedChat
+ */
 void receiveInvitation(int *friendSocket, struct sockaddr_in *friendAddress, Client *chattingBuddy, int *isChatting, int *outstandingInvite, int *hasResponded){
     ClientToClientMessage c2cMess = receiveTCPMessage(*friendSocket);
     *outstandingInvite = 1;
@@ -168,35 +197,3 @@ void receiveInvitation(int *friendSocket, struct sockaddr_in *friendAddress, Cli
     chattingBuddy->address.sin_port = htons(c2cMess.tcpPort);
     strcpy(chattingBuddy->username, c2cMess.usernameOfSender);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
