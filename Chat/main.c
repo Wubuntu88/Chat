@@ -2,6 +2,9 @@
 //  main.c
 //  Chat
 //
+//  I just test stuff out in this class.
+//  Some of the stuff ends up in the other files.
+//
 //  Created by  on 3/25/16.
 //  Copyright © 2016 EMU. All rights reserved.
 //
