@@ -21,7 +21,9 @@ int sockadddr_in_are_equal(struct sockaddr_in *first, struct sockaddr_in *second
         return 0;
     }
 }
-
+/*
+ * Makes a deep copy of a sockaddr_in
+ */
 void copy_sockaddr_in(struct sockaddr_in *destination, struct sockaddr_in *source){
     destination->sin_family = source->sin_family;
     destination->sin_addr.s_addr = source->sin_addr.s_addr;

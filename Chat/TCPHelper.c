@@ -14,7 +14,9 @@
 void DieWithError(char *errorMessage);  /* External error handling function */
 
 /*
- *
+ * Sends any message using tcp with the socket and c2cMessage
+ * @param: int socket
+ * @param: ClientToClientMessage
  */
 void sendTCPMessage(int socket, ClientToClientMessage clientToClientMessage){
     long messageLength = sizeof(clientToClientMessage);
@@ -24,6 +26,11 @@ void sendTCPMessage(int socket, ClientToClientMessage clientToClientMessage){
     }
 }
 
+/*
+ * Receives a tcp message using the specified socket.
+ * @param: int socket
+ * @return: ClientToClientMessage
+ */
 ClientToClientMessage receiveTCPMessage(int socket){
     ClientToClientMessage c2cMess;
     long messageLength = sizeof(c2cMess);
@@ -34,24 +41,3 @@ ClientToClientMessage receiveTCPMessage(int socket){
     }
     return c2cMess;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
