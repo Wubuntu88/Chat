@@ -9,7 +9,9 @@
 #include "ClientInfo.h"
 #include "SockAddrHelper.h"
 #include <string.h>
-
+/*
+ * Creates a deep copy of a client
+ */
 void copyClient(Client *destination, Client *source){
     strcpy(destination->username, source->username);
     copy_sockaddr_in(&destination->address, &source->address);

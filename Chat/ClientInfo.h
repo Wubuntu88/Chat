@@ -11,6 +11,9 @@
 
 #include <stdio.h>
 #include <arpa/inet.h>
+/*
+ * Stores basic information about a client
+ */
 typedef struct {
     char username[20];
     struct sockaddr_in address;
